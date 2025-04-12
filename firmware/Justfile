@@ -1,0 +1,16 @@
+
+# default recipe to display help information
+help:
+  @just --list
+
+alias b := build
+
+build:
+    west build -b nrf52840dk_nrf52840
+
+alias f := flash
+
+flash: build
+    west flash
+
+
