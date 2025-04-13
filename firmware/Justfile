@@ -6,7 +6,7 @@ help:
 alias b := build
 
 build:
-    west build -b nrf52840dk_nrf52840
+    west build -b nrf52840dk/nrf52840
 
 alias f := flash
 

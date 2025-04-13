@@ -43,6 +43,7 @@
             pkgs.picocom
             pkgs.nrf-command-line-tools
             pkgs.clang-tools
+            pkgs.just
       ];
     };
   };
