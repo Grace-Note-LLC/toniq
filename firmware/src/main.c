@@ -1,12 +1,12 @@
 #include <zephyr/types.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/byteorder.h>
 #include <stddef.h>
-#include <sys/printk.h>
-#include <sys/util.h>
-#include <sys/byteorder.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/gap.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/gap.h>
 
 #define DEVICE_NAME "water.ai"
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
