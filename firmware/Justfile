@@ -1,6 +1,7 @@
 
 # default recipe to display help information
 help:
+  @echo "Run 'west init' and 'west update' to setup dependencies"
   @just --list
 
 alias b := build
