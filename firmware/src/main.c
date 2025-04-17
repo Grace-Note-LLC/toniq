@@ -26,7 +26,7 @@ int main(void) {
 		// Read sensors
 		int water_level = read_ultrasonic();
 		printk("Water level is %d\n", water_level);
-		k_sleep(K_MSEC(10000));
+		k_msleep(10000);
 	}
 
 	return 0;
