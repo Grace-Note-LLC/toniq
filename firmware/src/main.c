@@ -1,4 +1,7 @@
 #include <zephyr/kernel.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/spi.h>
 
 #include "bluetooth.h"
 #include "ultrasonic.h"
