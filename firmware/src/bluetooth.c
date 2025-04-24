@@ -1,13 +1,3 @@
-#include <zephyr/types.h>
-#include <zephyr/kernel.h>
-#include <zephyr/sys/util.h>
-#include <zephyr/sys/byteorder.h>
-#include <stddef.h>
-
-#include <zephyr/bluetooth/bluetooth.h>
-#include <zephyr/bluetooth/hci.h>
-#include <zephyr/bluetooth/gap.h>
-
 #include "bluetooth.h"
 
 void bt_ready(int err)

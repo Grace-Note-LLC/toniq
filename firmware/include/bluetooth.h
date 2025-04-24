@@ -14,7 +14,7 @@
 #define DEVICE_NAME "water.ai"
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
-#define BT_BYTES_LIST_LE16(_v)         \
+#define BT_BYTES_LIST_LE16(_v)      \
         (((_v) >>  0) & 0xFFU),     \
         (((_v) >>  8) & 0xFFU)      \
 

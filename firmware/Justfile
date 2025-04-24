@@ -7,11 +7,11 @@ help:
 alias b := build
 
 build:
-    west build -b nrf52840dk/nrf52840
+    west build -b nrf52840dk/nrf52840 -- -DDTC_OVERLAY_FILE=app.overlay
 
 alias f := flash
 
 flash: build
-    west flash
+    west flash --runner jlink
 
 
