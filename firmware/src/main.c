@@ -39,7 +39,14 @@ int initialize(void) {
 	if (err < 0) {
 		return -1;
 	}
+    
+    printf("initializing SPI with cs of %d\n", display_dev.config.cs.gpio.pin);
 
+	// err = gpio_pin_set_dt(&display_dev.config.cs.gpio, 1);
+	// if (err < 0) {
+	// 	return -1;
+	// }
+	//
 	/* Initialize the Bluetooth Subsystem */
 	printk("Initialize Bluetooth\n");
 	err = bt_enable(bt_ready);
@@ -60,7 +67,8 @@ int initialize(void) {
 
 int main(void) {
 	int err;
-	if ((err = initialize())) {
+    err = initialize();
+	if (err) {
 		printk("Initialization failed (err %d)\n", err);
 	}
 
@@ -76,6 +84,10 @@ int main(void) {
     my_spi_buffer[0].len = 4;
     const struct spi_buf_set tx_buff = { my_spi_buffer, 1 };
 
+    // uint8_t reg = 12;
+    //
+    // const struct spi_buf tx_buf = {.buf = (void*)(&reg), .len = 1};
+    // const struct spi_buf_set tx = {.buffers = &tx_buf, .count = 1};
 
 	while (true) {
 		// Read sensors
@@ -90,6 +102,7 @@ int main(void) {
         } else {
             printf("spi_write worked!\n"); 
         }
+        // k_busy_wait(T_SCLK_NCS_WR);
 
         err = gpio_pin_toggle_dt(&gpio);
 		if (err < 0) {
