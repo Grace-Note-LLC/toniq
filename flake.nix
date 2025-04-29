@@ -44,7 +44,7 @@
             pkgs.nrf-command-line-tools
             pkgs.clang-tools
             pkgs.just
-            pkgs.nrfutil
+            # pkgs.nrfutil
       ];
     };
   };
