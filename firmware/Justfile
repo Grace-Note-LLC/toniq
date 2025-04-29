@@ -7,7 +7,7 @@ help:
 alias b := build
 
 build:
-    west build --pristine -b nrf52840dk/nrf52840 -- -DDTC_OVERLAY_FILE=./nrf52840dk_spi_waveshare.overlay
+    west build --pristine -b nrf52840dk/nrf52840 -- -DDTC_OVERLAY_FILE=app.overlay
 
 alias f := flash
 
