@@ -8,6 +8,7 @@ include_directories(include/)
 target_sources(app PRIVATE 
     src/main.c
     src/bluetooth.c
+    src/imu.c
     src/tds.c
     src/ultrasonic.c
 )
