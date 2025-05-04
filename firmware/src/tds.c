@@ -19,6 +19,7 @@
 #define CHANNEL_NUMBER 0
 #define DT_SPEC_AND_COMMA(node_id, prop, idx) \
 	ADC_DT_SPEC_GET_BY_IDX(node_id, idx),
+#define TEMPERATURE 25.0
 
 /* Data of ADC io-channels specified in devicetree. */
 static const struct adc_dt_spec adc_channels[] = {
@@ -53,7 +54,9 @@ bool init_tds(void) {
     return true;
 }
 
-int32_t read_tds(void) {
+// If this is inaccurate, could change this function to sample the TDS sensor multiple times
+// returns TDS in ppm
+int read_tds(void) {
     int32_t val_mv;
     int err;
     printk("- %s, channel %d: ",
@@ -64,15 +67,15 @@ int32_t read_tds(void) {
 
     err = adc_read_dt(&adc_channels[CHANNEL_NUMBER], &sequence);
     if (err < 0) {
-        printk("Could not read (%d)\n", err);
+        printk("Could not read adc (%d)\n", err);
         return -1;
     }
 
     /*
-        * If using differential mode, the 16 bit value
-        * in the ADC sample buffer should be a signed 2's
-        * complement value.
-        */
+    * If using differential mode, the 16 bit value
+    * in the ADC sample buffer should be a signed 2's
+    * complement value.
+    */
     if (adc_channels[CHANNEL_NUMBER].channel_cfg.differential) {
         val_mv = (int32_t)((int16_t)buf);
     } else {
@@ -80,8 +83,7 @@ int32_t read_tds(void) {
     }
 
     printk("%"PRId32, val_mv);
-    err = adc_raw_to_millivolts_dt(&adc_channels[CHANNEL_NUMBER],
-                        &val_mv);
+    err = adc_raw_to_millivolts_dt(&adc_channels[CHANNEL_NUMBER], &val_mv);
     /* conversion to mV may not be supported, skip if not */
     if (err < 0) {
         printk(" (value in mV not available)\n");
@@ -89,5 +91,15 @@ int32_t read_tds(void) {
         printk(" = %"PRId32" mV\n", val_mv);
     }
 
-    return val_mv;
+    // Convert to PPM
+    // https://wiki.dfrobot.com/Gravity__Analog_TDS_Sensor___Meter_For_Arduino_SKU__SEN0244
+
+    float val_v = (float)val_mv / 1000.0F; // convert to voltage
+    // temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
+    float compensationCoefficient = 1.0+0.02*(TEMPERATURE-25.0);
+    float compensationVoltage = val_v / compensationCoefficient; // temperature compensation
+    // convert voltage value to tds value
+    float tdsValue = (133.42F*compensationVoltage*compensationVoltage*compensationVoltage - 255.86F*compensationVoltage*compensationVoltage + 857.39F *compensationVoltage)*0.5F;
+
+    return (int) tdsValue;
 }
