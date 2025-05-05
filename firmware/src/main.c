@@ -1,62 +1,75 @@
 #include <zephyr/kernel.h>
-#include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
-#include <zephyr/drivers/spi.h>
+#include <stdio.h>
+#include <zephyr/drivers/adc.h>
 
-// #include "bluetooth.h"
-// #include "tds.h"
-// #include "ultrasonic.h"
+#define TRIG_PIN 29
+#define ECHO_PIN 30
 
-#define SPI1_NODE DT_NODELABEL(spi1)
-static const struct device* spi1_dev = DEVICE_DT_GET(SPI1_NODE);
+const struct device *gpio0 = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 
-#define MY_GPIO1 DT_NODELABEL(gpio1)
-#define GPIO_1_CS 7
-const struct device* gpio1_dev = DEVICE_DT_GET(MY_GPIO1);
+volatile static uint32_t rise_time = 0;
 
-static struct spi_config spi_cfg = {
-	.frequency = 125000U,
-	.operation = SPI_WORD_SET(8),
-	.slave = 0,
-};
+static void gpio_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins) {
+    static bool high = false;
+    uint32_t now = k_cycle_get_32();
 
-static void setRegister(uint8_t reg, uint8_t value) {
-	int err;
-
-	uint8_t tx_values[] = {(reg & 0x7F), value};
-
-	struct spi_buf tx_spi_bufs[] = {
-		{ .buf = tx_values, .len = sizeof(tx_values) }
-	};
-
-	struct spi_buf_set spi_tx_buffer_set = {
-		.buffers = tx_spi_bufs,
-		.count = 1
-	};
-
-	gpio_pin_set(gpio1_dev, GPIO_1_CS, 0);
-	err = spi_write(spi1_dev, &spi_cfg, &spi_tx_buffer_set);
-	gpio_pin_set(gpio1_dev, GPIO_1_CS, 1);
-
-	if (err < 0) {
-		printk("setRegister failed: %d\n", err);
-	}
+    if (!high) {
+        rise_time = now;
+        high = true;
+    } else {
+        uint32_t fall_time = now;
+        uint32_t delta_cycles = fall_time - rise_time;
+        uint32_t duration_us = k_cyc_to_us_near32(delta_cycles);
+        // printk("Pulse width: %u us\n", duration_us);
+        // Use centimeters per microsecond conversion; divide by 2 because sound travels out and back
+        float distance_cm = ((float)duration_us * 0.0343) / 2;
+        static float distance_samples[10] = {0};
+        static int sample_index = 0;
+        static int sample_count = 0;
+        
+        // Store current reading in circular buffer
+        distance_samples[sample_index] = distance_cm;
+        sample_index = (sample_index + 1) % 10;
+        if (sample_count < 5) {
+            sample_count++;
+        }
+        
+        // Calculate average of available samples
+        float sum = 0;
+        for (int i = 0; i < sample_count; i++) {
+            sum += distance_samples[i];
+        }
+        float avg_distance = sum / sample_count;
+        
+        printf("Distance: %.2f cm (Avg: %.2f cm)\n", distance_cm, avg_distance);
+        // printf("%.2f\n", distance_cm );
+        high = false;
+    }
 }
 
+static struct gpio_callback gpio_cb;
+
 int main(void) {
+    printf("STARTING...\n");
 
-	gpio_pin_configure(gpio1_dev, GPIO_1_CS, GPIO_OUTPUT);
-	gpio_pin_set(gpio1_dev, GPIO_1_CS, 1);
+    gpio_pin_configure(gpio0, TRIG_PIN, GPIO_OUTPUT);
+    gpio_pin_configure(gpio0, ECHO_PIN, GPIO_INPUT);
 
-	if (!device_is_ready(spi1_dev)) {
-		printk("spi1_dev not ready\n");
-		return 1;
-	}
+    // Configure interrupt to measure pulse width on echo pin
+    gpio_init_callback(&gpio_cb, gpio_callback, BIT(ECHO_PIN));
+    gpio_add_callback(gpio0, &gpio_cb);
+    gpio_pin_interrupt_configure(gpio0, ECHO_PIN, GPIO_INT_EDGE_BOTH);
 
-	while (true) {
-		setRegister(0x69, 0x69);
-		k_msleep(1000);
-	}
+    gpio_pin_set_raw(gpio0, TRIG_PIN, 0);
 
-	return 0;
+    while (1) {
+        // Set TRIG high for 10us
+        gpio_pin_set_raw(gpio0, TRIG_PIN, 1);
+        k_usleep(10);
+
+        gpio_pin_set_raw(gpio0, TRIG_PIN, 0);
+
+        k_msleep(100);
+    }
 }
