@@ -45,3 +45,15 @@
 		zephyr,resolution = <12>;
 	};
 };
+
+&i2c1 {										/* a */
+	compatible = "nordic,nrf-twim";			/* b */
+	status = "okay";						/* c */
+	clock-frequency = <100000>;				/* d */
+
+	imu:nRF52840@28 {				/* e */
+		// device compatible				/* f */
+		label = "imu";	/* g */
+       	reg = <0x68>;						/* h */
+   	};
+};	
