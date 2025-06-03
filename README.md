@@ -72,21 +72,18 @@ The repository is organized as follows:
 
 ```
 TONIQ/
-├── README.md                   <- The document you are currently reading.
+├── README.md
 ├── assets/
 │   ├── images/                 <- Contains project photos, diagrams, and logos (e.g., TONIQ-logo.png, gallery images).
 │   └── videos/                 <- Contains demonstration videos (e.g., final_demo_video.mp4).
 ├── docs/                       <- Contains all project documentation.
 │   ├── Mid_Quarter_Report.pdf
-│   ├── Project_Specification.pdf
-│   ├── Final_Report.pdf          <- (Placeholder for final report) 
-│   ├── Presentation_Slides.pdf   <- (Placeholder for presentation slides) 
-│   └── Usage_Manual.pdf          <- (Placeholder for user manual) 
-├── src/                        <- Source code for the firmware.
+│   └── Project_Specification.pdf
+├── src/
 │   ├── bluetooth.c             <- Bluetooth Low Energy functionality (initially planned, later abandoned for course scope). 
 │   ├── eink.c                  <- E-Ink display driver and interface logic. 
 │   ├── GxEPD2_154_D67.cpp      <- E-Ink display (GDEH0154D67 model) specific library code. 
-│   ├── GxEPD2_154_D67.h      <- Header for GxEPD2_154_D67.cpp.
+│   ├── GxEPD2_154_D67.h
 │   ├── main.c                  <- Main application logic. 
 │   ├── tds.c                   <- TDS sensor interface code. 
 │   ├── ultrasonic.c            <- Ultrasonic sensor interface code.
@@ -96,17 +93,12 @@ TONIQ/
 │   │   ├── tds.h
 │   │   └── ultrasonic.h
 │   └── eink/                   <- Subdirectory for e-ink library files like GxEPD2_BW.h, Fonts.
-├── .gitignore                  <- Specifies intentionally untracked files that Git should ignore.
-├── CMakeLists.txt              <- CMake configuration file for building the project with Zephyr.
-├── default.overlay             <- Devicetree overlay file for nRF52840DK specific configurations. 
-├── Justfile                    <- Defines project-specific commands for building and flashing using just.
-└── prj.conf                    <- Zephyr project configuration file, enabling necessary kernel features and drivers.
-
-
+├── .gitignore
+├── CMakeLists.txt
+├── default.overlay. 
+├── Justfile
+└── prj.conf
 ```
-
-
-
 
 ---
 
@@ -239,4 +231,4 @@ Currently, this project is primarily a university coursework submission. However
 ---
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details
