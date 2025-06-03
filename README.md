@@ -21,11 +21,9 @@
     * [Installation](#installation)
     * [Building and Flashing](#building-and-flashing)
 8.  [Documentation](#documentation)
-9.  [Milestones](#milestones)
 10. [Gallery](#gallery)
 11. [Contributing](#contributing)
 12. [License](#license)
-13. [Acknowledgments](#acknowledgments)
 
 ---
 
