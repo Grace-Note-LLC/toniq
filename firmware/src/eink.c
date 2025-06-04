@@ -13,7 +13,7 @@
 GxEPD2_BW<GxEPD2_154_D67, MAX_HEIGHT(GxEPD2_154_D67)> display(GxEPD2_154_D67(
     /*CS=*/ EPD_CS_PIN,    // GPIO_1_CS (7)
     /*DC=*/ EPD_DC_PIN,    // GPIO_0_DC (21)
-    /*RST=*/ EPD_RST_PIN,  // GPIO_0_RST (12)
+    /*RST=*/ EPD_RST_PIN,  // GPIO_0_RST (26)
     /*BUSY=*/ EPD_BUSY_PIN // GPIO_0_BUSY (11)
 ));
 
