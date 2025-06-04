@@ -70,12 +70,6 @@
 			zephyr,code = <INPUT_KEY_1>;
 		};
 
-		button2: button_2 {
-			gpios = <&gpio0 24 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
-			label = "Push button switch 2";
-			zephyr,code = <INPUT_KEY_2>;
-		};
-
 		button3: button_3 {
 			gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
 			label = "Push button switch 3";
@@ -167,11 +161,11 @@
 
 &gpio0 {
 	status = "okay";
-	gpio-reserved-ranges = <0 2>, <6 1>, <8 3>, <17 7>;
+	gpio-reserved-ranges = <0 2>, <6 1>, <8 3>, <17 7>, <24 1>;
 	gpio-line-names = "XL1", "XL2", "AREF", "A0", "A1", "RTS", "TXD",
 		"CTS", "RXD", "NFC1", "NFC2", "BUTTON1", "BUTTON2", "LED1",
 		"LED2", "LED3", "LED4", "QSPI CS", "RESET", "QSPI CLK",
-		"QSPI DIO0", "QSPI DIO1", "QSPI DIO2", "QSPI DIO3","BUTTON3",
+		"QSPI DIO0", "QSPI DIO1", "QSPI DIO2", "QSPI DIO3", "EPD_RST",
 		"BUTTON4", "SDA", "SCL", "A2", "A3", "A4", "A5";
 };
 

@@ -22,15 +22,15 @@ static void epd_power_off_impl(epd_driver_t* driver);
 static void epd_hibernate_impl(epd_driver_t* driver);
 static void epd_set_partial_ram_area_impl(epd_driver_t* driver, uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 
-// Helper function for busy waiting
-static void busy_wait_ms(uint32_t ms) {
-    // Assuming 64MHz system clock, each cycle is ~15.6ns
-    // So 1ms is roughly 64,000 cycles
-    const uint32_t cycles_per_ms = 64000;
-    for (uint32_t i = 0; i < ms * cycles_per_ms; i++) {
-        __asm__ __volatile__("nop");
-    }
-}
+// // Helper function for busy waiting
+// static void busy_wait_ms(uint32_t ms) {
+//     // Assuming 64MHz system clock, each cycle is ~15.6ns
+//     // So 1ms is roughly 64,000 cycles
+//     const uint32_t cycles_per_ms = 64000;
+//     for (uint32_t i = 0; i < ms * cycles_per_ms; i++) {
+//         __asm__ __volatile__("nop");
+//     }
+// }
 
 // Initialize the display driver
 int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_pin, int16_t busy_pin,
@@ -40,7 +40,7 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
         return -1;
     }
 
-    LOG_INF("Starting display initialization");
+    LOG_INF("Starting display initialization for 1.54\" display");
     
     // Initialize driver structure
     memset(driver, 0, sizeof(epd_driver_t));
@@ -51,7 +51,8 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     driver->dc_pin = dc_pin;
     driver->rst_pin = rst_pin;
     driver->busy_pin = busy_pin;
-    LOG_DBG("Pin configuration set");
+    LOG_DBG("Pin configuration set - CS: %d, DC: %d, RST: %d, BUSY: %d", 
+            cs_pin, dc_pin, rst_pin, busy_pin);
     
     // Store device pointers
     driver->gpio0_dev = gpio0_dev;
@@ -65,7 +66,7 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
                                  SPI_OP_MODE_MASTER;  // Mode 0 (CPOL=0, CPHA=0)
     driver->spi_config.frequency = 4000000; // 4MHz
     driver->spi_config.slave = 0;
-    LOG_DBG("SPI configuration set");
+    LOG_DBG("SPI configuration set - Mode: 0, Freq: 4MHz");
     
     // Set function pointers
     driver->write_command = epd_write_command_impl;
@@ -77,58 +78,80 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     driver->hibernate = epd_hibernate_impl;
     LOG_DBG("Function pointers set");
     
-    // Set timing parameters
-    driver->power_on_time = 100;
-    driver->power_off_time = 100;
-    driver->full_refresh_time = 2000;
-    driver->partial_refresh_time = 500;
-    LOG_DBG("Timing parameters set");
+    // Set timing parameters for 1.54" display
+    driver->power_on_time = 200;  // Increased for 1.54"
+    driver->power_off_time = 200; // Increased for 1.54"
+    driver->full_refresh_time = 3000; // Increased for 1.54"
+    driver->partial_refresh_time = 1000; // Increased for 1.54"
+    LOG_DBG("Timing parameters set for 1.54\" display");
     
     // Use static buffer
     driver->buffer = display_buffer;
     driver->buffer_size = EPD_BUFFER_SIZE;
-    LOG_DBG("Buffer configured");
+    LOG_DBG("Buffer configured - Size: %d bytes", EPD_BUFFER_SIZE);
     
     // Initialize display
     LOG_INF("Resetting display");
     driver->reset(driver);
-    LOG_DBG("Reset complete, waiting 10ms");
-    k_msleep(10);
+    LOG_DBG("Reset complete, waiting 20ms");
+    k_msleep(20);
     
-    // Send initialization commands
+    // Send initialization commands for 1.54" display
     LOG_INF("Sending initialization commands");
-    driver->write_command(driver, EPD_CMD_POWER_SETTING);
-    LOG_DBG("Power setting command sent");
-    driver->write_data(driver, 0x03);
+    
+    // Software reset
+    LOG_DBG("Sending software reset command");
+    driver->write_command(driver, 0x12);
+    driver->wait_while_busy(driver, "software reset", 20);
+    LOG_DBG("Software reset complete");
+        
+    LOG_DBG("Sending Driver Output Control (0x01)");
+    driver->write_command(driver, 0x01);
+    driver->write_data(driver, 0xC7); // (200-1) = 199 decimal
     driver->write_data(driver, 0x00);
-    driver->write_data(driver, 0x2b);
-    driver->write_data(driver, 0x2b);
-    driver->write_data(driver, 0x03);
-    LOG_DBG("Power setting data sent");
-    
-    driver->write_command(driver, 0x06);
-    driver->write_data(driver, 0x17);
-    driver->write_data(driver, 0x17);
-    driver->write_data(driver, 0x17);
-    
-    driver->write_command(driver, EPD_CMD_POWER_ON);
-    driver->wait_while_busy(driver, "power on", driver->power_on_time);
-    
-    driver->write_command(driver, EPD_CMD_PANEL_SETTING);
-    driver->write_data(driver, 0xbf);
-    driver->write_data(driver, 0x0e);
-    
-    driver->write_command(driver, 0x30);
-    driver->write_data(driver, 0x3a);
-    
-    driver->write_command(driver, 0x82);
-    driver->write_data(driver, 0x28);
-    
-    driver->write_command(driver, 0x50);
-    driver->write_data(driver, 0x97);
-    
+    driver->write_data(driver, 0x00); // Gate Scan Start Position LSB 00, MSB 00 = 0
+
+    LOG_DBG("Sending Border Waveform Control (0x3C)");
+    driver->write_command(driver, 0x3C);
+    driver->write_data(driver, 0x05); // Refer to GDEH0154D67 datasheet or GxEPD2 for exact value meaning
+
+    // This command (0x18 Temperature Sensor) is often optional for basic display operation but good for consistency.
+    // LOG_DBG("Sending Temperature Sensor Control (0x18)");
+    // driver->write_command(driver, 0x18);
+    // driver->write_data(driver, 0x80); // Enable internal sensor
+
+    // The original epd_driver.c has many other commands (Power setting, Booster, PLL, VCM, VCOM)
+    // These might be necessary or might conflict. Start with the GxEPD2 minimal init.
+    // If issues persist, consult the GDEH0154D67 datasheet to see if commands like
+    // Power Setting (0x01 with different params), Booster (0x06), Power On (0x04)
+    // are needed *before* or *interspersed* with the GxEPD2 sequence.
+    // GxEPD2 typically handles power on/off via separate _PowerOn() / _PowerOff() methods which are
+    // called by refresh routines. Your epd_driver.c has 0x04 (POWER_ON).
+    // For now, let's assume the GxEPD2 sequence above is more targeted.
+    // Ensure Power On (0x04) is called if not part of the refresh sequence logic.
+    // The GxEPD2 lib calls _PowerOn in its refresh/display methods.
+    // Your current epd_driver.c calls POWER_ON (0x04) and waits. This is probably good.
+    // It should be: SW_RESET -> Driver Output -> Border Waveform -> (Optional Temp) -> POWER_ON
+
+    LOG_DBG("Sending power on command (0x04)");
+    driver->write_command(driver, 0x04);
+    driver->wait_while_busy(driver, "power on", driver->power_on_time); // power_on_time might need adjustment
+    LOG_DBG("Power on complete");
+
+    // RAM Address and Data Entry Mode settings:
+    // GxEPD2 calls _setPartialRamArea, which includes Data Entry Mode (0x11).
+    // It's good to set the data entry mode and initial RAM window.
+    LOG_DBG("Setting Data Entry Mode (0x11)");
+    driver->write_command(driver, 0x11);
+    driver->write_data(driver, 0x03); // X increment, Y increment
+
+    LOG_DBG("Setting RAM X/Y Area and Pointers");
+    // Call epd_set_partial_ram_area_impl to set full screen initially
+    epd_set_partial_ram_area_impl(driver, 0, 0, EPD_WIDTH, EPD_HEIGHT);
+        
     driver->init_display_done = true;
-    LOG_INF("Display initialization complete");
+    driver->power_is_on = true;
+    LOG_INF("Display initialization complete for 1.54\" display");
     return 0;
 }
 
@@ -247,9 +270,17 @@ static void epd_reset_impl(epd_driver_t* driver) {
     
     LOG_INF("Starting display reset sequence");
     
+    // Ensure RST pin is configured as output
+    int ret = gpio_pin_configure(driver->gpio0_dev, driver->rst_pin, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure RST pin as output: %d", ret);
+        return;
+    }
+    LOG_DBG("RST pin configured as output");
+    
     // Initial state - RST high
     LOG_DBG("Setting RST pin high (initial state)");
-    int ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
+    ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
     if (ret != 0) {
         LOG_ERR("Failed to set RST pin high: %d", ret);
         return;
@@ -257,13 +288,15 @@ static void epd_reset_impl(epd_driver_t* driver) {
     
     // Verify the pin state
     int val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
+    LOG_DBG("RST pin state after setting high: %d", val);
     if (val != 1) {
         LOG_ERR("RST pin not set high, got: %d", val);
         return;
     }
     
-    LOG_DBG("Waiting 10ms after initial RST high");
-    busy_wait_ms(10);
+    // Wait for power to stabilize
+    LOG_DBG("Waiting 100ms for power stabilization");
+    k_msleep(100);
     
     // Reset pulse - RST low
     LOG_DBG("Setting RST pin low (reset pulse)");
@@ -275,13 +308,15 @@ static void epd_reset_impl(epd_driver_t* driver) {
     
     // Verify the pin state
     val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
+    LOG_DBG("RST pin state after setting low: %d", val);
     if (val != 0) {
         LOG_ERR("RST pin not set low, got: %d", val);
         return;
     }
     
-    LOG_DBG("Waiting 1ms during reset pulse");
-    busy_wait_ms(1);
+    // Wait for reset pulse
+    LOG_DBG("Waiting 20ms during reset pulse");
+    k_msleep(20);
     
     // End reset - RST high
     LOG_DBG("Setting RST pin high (end reset)");
@@ -293,19 +328,17 @@ static void epd_reset_impl(epd_driver_t* driver) {
     
     // Verify the pin state
     val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
+    LOG_DBG("RST pin state after end reset: %d", val);
     if (val != 1) {
-        LOG_ERR("RST pin not set high, got: %d", val);
+        LOG_ERR("RST pin not set high after reset, got: %d", val);
         return;
     }
     
-    LOG_DBG("Waiting 10ms after reset");
-    busy_wait_ms(10);
+    // Wait for display to stabilize after reset
+    LOG_DBG("Waiting 200ms after reset for display stabilization");
+    k_msleep(200);
     
     LOG_INF("Reset sequence complete");
-    
-    // Add a small delay after reset
-    LOG_DBG("Additional 5ms delay after reset sequence");
-    busy_wait_ms(5);
 }
 
 // Set partial RAM area

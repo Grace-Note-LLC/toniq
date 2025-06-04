@@ -21,7 +21,7 @@ const struct device* gpio1_dev = DEVICE_DT_GET(DT_NODELABEL(gpio1));
 #define EPD_CS_PIN 7    // GPIO1_7
 #define EPD_DC_PIN 21   // GPIO0_21
 #define EPD_RST_PIN 24  // GPIO0_24 (BUTTON3)
-#define EPD_BUSY_PIN 11 // GPIO0_11
+#define EPD_BUSY_PIN 22 // GPIO0_22
 
 // Display dimensions (200x200 for D variant)
 #define EPD_2IN13D_WIDTH (EPD_WIDTH)
@@ -44,7 +44,7 @@ int main(void) {
     }
     
     LOG_INF("Devices ready - GPIO0: %p, GPIO1: %p, SPI: %p", gpio0_dev, gpio1_dev, spi1_dev);
-    k_msleep(10);  // Small delay to ensure log message is processed
+    k_msleep(100);  // Longer delay to ensure stable power
 
     // Configure GPIO pins
     LOG_INF("Starting GPIO configuration...");
@@ -123,7 +123,7 @@ int main(void) {
     k_msleep(10);
 
     LOG_INF("GPIO configuration complete");
-    k_msleep(10);
+    k_msleep(100);  // Longer delay after GPIO config
 
     // Store device pointers
     LOG_INF("Storing device pointers");
@@ -131,7 +131,7 @@ int main(void) {
     display.gpio0_dev = gpio0_dev;
     display.gpio1_dev = gpio1_dev;
     LOG_INF("Device pointers stored");
-    k_msleep(10);
+    k_msleep(100);  // Longer delay after storing pointers
 
     // Initialize display
     LOG_INF("Initializing display");
@@ -140,33 +140,48 @@ int main(void) {
         return 0;
     }
     LOG_INF("Display initialized");
+    k_msleep(100);  // Longer delay after init
     
-	// Clear screen to white
+    // Clear screen to white
+    LOG_INF("Clearing screen to white");
     epd_clear_screen(&display, 0xFF);
-	LOG_INF("Screen cleared");
+    LOG_INF("Screen cleared");
+    k_msleep(100);  // Longer delay after clear
 
     // Initialize display buffer (all white)
+    LOG_INF("Initializing display buffer");
     memset(display_buffer, 0xFF, EPD_BUFFER_SIZE);
     LOG_INF("Display buffer initialized");
+    k_msleep(100);  // Longer delay after buffer init
 
     // Draw a simple pattern in the middle
+    LOG_INF("Drawing test pattern");
     for (int i = 0; i < 20; i++) {
         display_buffer[100 * (EPD_WIDTH / 8) + i] = 0x00;  // Draw a black line
     }
     LOG_INF("Pattern drawn");
+    k_msleep(100);  // Longer delay after drawing
     
     // Write to display and refresh
+    LOG_INF("Writing pattern to display");
     epd_write_image(&display, display_buffer, 0, 0, EPD_WIDTH, EPD_HEIGHT, false, false);
+    LOG_INF("Pattern written to display");
+    k_msleep(100);  // Longer delay after write
+
+    LOG_INF("Refreshing display");
     epd_refresh(&display, false);
-	LOG_INF("Display refreshed");
+    LOG_INF("Display refreshed");
+    k_msleep(2000);  // Wait 2 seconds to see the update
+
     // Power off
+    LOG_INF("Powering off display");
     display.power_off(&display);
-	LOG_INF("Display powered off");
-	
+    LOG_INF("Display powered off");
+    
     // Done
     while (1) {
         k_msleep(1000);
-		LOG_INF("Still alive...");
+        LOG_INF("Still alive...");
     }
 
     return 0;
