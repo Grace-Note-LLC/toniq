@@ -92,7 +92,7 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     
     // Initialize display
     LOG_INF("Resetting display");
-    driver->reset(driver);
+    // driver->reset(driver);
     LOG_DBG("Reset complete, waiting 20ms");
     k_msleep(20);
     
@@ -133,17 +133,17 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     // Your current epd_driver.c calls POWER_ON (0x04) and waits. This is probably good.
     // It should be: SW_RESET -> Driver Output -> Border Waveform -> (Optional Temp) -> POWER_ON
 
-    LOG_DBG("Sending power on command (0x04)");
-    driver->write_command(driver, 0x04);
-    driver->wait_while_busy(driver, "power on", driver->power_on_time); // power_on_time might need adjustment
-    LOG_DBG("Power on complete");
+    // LOG_DBG("Sending power on command (0x04)");
+    // driver->write_command(driver, 0x04);
+    // driver->wait_while_busy(driver, "power on", driver->power_on_time); // power_on_time might need adjustment
+    // LOG_DBG("Power on complete");
 
-    // RAM Address and Data Entry Mode settings:
-    // GxEPD2 calls _setPartialRamArea, which includes Data Entry Mode (0x11).
-    // It's good to set the data entry mode and initial RAM window.
-    LOG_DBG("Setting Data Entry Mode (0x11)");
-    driver->write_command(driver, 0x11);
-    driver->write_data(driver, 0x03); // X increment, Y increment
+    // // RAM Address and Data Entry Mode settings:
+    // // GxEPD2 calls _setPartialRamArea, which includes Data Entry Mode (0x11).
+    // // It's good to set the data entry mode and initial RAM window.
+    // LOG_DBG("Setting Data Entry Mode (0x11)");
+    // driver->write_command(driver, 0x11);
+    // driver->write_data(driver, 0x03); // X increment, Y increment
 
     LOG_DBG("Setting RAM X/Y Area and Pointers");
     // Call epd_set_partial_ram_area_impl to set full screen initially
@@ -283,7 +283,7 @@ static void epd_reset_impl(epd_driver_t* driver) {
     ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
     if (ret != 0) {
         LOG_ERR("Failed to set RST pin high: %d", ret);
-        return;
+        // return;
     }
     
     // Verify the pin state
@@ -291,7 +291,7 @@ static void epd_reset_impl(epd_driver_t* driver) {
     LOG_DBG("RST pin state after setting high: %d", val);
     if (val != 1) {
         LOG_ERR("RST pin not set high, got: %d", val);
-        return;
+        // return;
     }
     
     // Wait for power to stabilize
@@ -303,7 +303,7 @@ static void epd_reset_impl(epd_driver_t* driver) {
     ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 0);
     if (ret != 0) {
         LOG_ERR("Failed to set RST pin low: %d", ret);
-        return;
+        // return;
     }
     
     // Verify the pin state
@@ -311,7 +311,7 @@ static void epd_reset_impl(epd_driver_t* driver) {
     LOG_DBG("RST pin state after setting low: %d", val);
     if (val != 0) {
         LOG_ERR("RST pin not set low, got: %d", val);
-        return;
+        // return;
     }
     
     // Wait for reset pulse

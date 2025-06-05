@@ -8,7 +8,7 @@
 LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
 
 // Device tree nodes for SPI and GPIO
-#define SPI1_NODE DT_NODELABEL(spi1)
+#define SPI1_NODE DT_NODELABEL(spi1) // this defines SCK: 31, MOSI/DIN: 30
 static const struct device* spi1_dev = DEVICE_DT_GET(SPI1_NODE);
 const struct device* gpio0_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 const struct device* gpio1_dev = DEVICE_DT_GET(DT_NODELABEL(gpio1));
@@ -20,7 +20,7 @@ const struct device* gpio1_dev = DEVICE_DT_GET(DT_NODELABEL(gpio1));
 // Pin definitions
 #define EPD_CS_PIN 7    // GPIO1_7
 #define EPD_DC_PIN 21   // GPIO0_21
-#define EPD_RST_PIN 24  // GPIO0_24 (BUTTON3)
+#define EPD_RST_PIN 24  // GPIO0_24
 #define EPD_BUSY_PIN 22 // GPIO0_22
 
 // Display dimensions (200x200 for D variant)
@@ -42,7 +42,7 @@ int main(void) {
         LOG_ERR("Devices not ready");
         return 0;
     }
-    
+
     LOG_INF("Devices ready - GPIO0: %p, GPIO1: %p, SPI: %p", gpio0_dev, gpio1_dev, spi1_dev);
     k_msleep(100);  // Longer delay to ensure stable power
 
@@ -157,7 +157,7 @@ int main(void) {
     // Draw a simple pattern in the middle
     LOG_INF("Drawing test pattern");
     for (int i = 0; i < 20; i++) {
-        display_buffer[100 * (EPD_WIDTH / 8) + i] = 0x00;  // Draw a black line
+        display_buffer[100 * (EPD_WIDTH / 8) + i] = 0x55;  // Draw a black line
     }
     LOG_INF("Pattern drawn");
     k_msleep(100);  // Longer delay after drawing

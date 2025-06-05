@@ -8,7 +8,7 @@ alias b := build
 
 build:
     west build --pristine -b nrf52840dk/nrf52840 
-    # -- -DDTC_OVERLAY_FILE=app.overlay
+    # -- -DDTC_OVERLAY_FILE=default.overlay
 
 alias f := flash
 
