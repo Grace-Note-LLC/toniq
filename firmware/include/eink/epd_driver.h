@@ -65,7 +65,7 @@ struct epd_driver {
     uint16_t partial_refresh_time;
 
     // SPI configuration
-    struct spi_config spi_config;
+    struct spi_config spi_cfg;
 };
 
 // Function declarations (replaces class methods)

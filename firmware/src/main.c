@@ -20,7 +20,7 @@ const struct device* gpio1_dev = DEVICE_DT_GET(DT_NODELABEL(gpio1));
 // Pin definitions
 #define EPD_CS_PIN 7    // GPIO1_7
 #define EPD_DC_PIN 21   // GPIO0_21
-#define EPD_RST_PIN 24  // GPIO0_24
+#define EPD_RST_PIN 26  // GPIO0_26 (Changed from 24 to 26 to match default.overlay D14)
 #define EPD_BUSY_PIN 22 // GPIO0_22
 
 // Display dimensions (200x200 for D variant)

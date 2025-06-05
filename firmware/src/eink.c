@@ -2,7 +2,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/spi.h>
-#include <eink/GxEPD2_BW.h>
+#include <eink/GxEPD2_BW.h> // Keep this include
 #include <eink/Fonts/FreeMonoBold9pt7b.h>
 
 // Define the display type for GDEH0154D67 1.54" 200x200 display
@@ -718,7 +718,7 @@ void drawBitmaps640x384()
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/spi.h>
-#include <eink/GxEPD2_BW.h>
+// #include <eink/GxEPD2_BW.h> // REMOVED redundant include
 #include <eink/Fonts/FreeMonoBold9pt7b.h>
 
 // Define the display type for GDEH0154D67 1.54" 200x200 display
@@ -729,7 +729,7 @@ void drawBitmaps640x384()
 GxEPD2_BW<GxEPD2_154_D67, MAX_HEIGHT(GxEPD2_154_D67)> display(GxEPD2_154_D67(
     /*CS=*/ EPD_CS_PIN,    // GPIO_1_CS (7)
     /*DC=*/ EPD_DC_PIN,    // GPIO_0_DC (21)
-    /*RST=*/ EPD_RST_PIN,  // GPIO_0_RST (12)
+    /*RST=*/ EPD_RST_PIN,  // GPIO_0_RST (12) // Note: This pin is used by GxEPD2_154_D67, not epd_driver.
     /*BUSY=*/ EPD_BUSY_PIN // GPIO_0_BUSY (11)
 ));
 

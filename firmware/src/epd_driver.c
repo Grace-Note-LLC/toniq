@@ -60,12 +60,21 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     driver->spi_dev = spi_dev;
     LOG_DBG("Device pointers stored - GPIO0: %p, GPIO1: %p, SPI: %p", 
             (void*)driver->gpio0_dev, (void*)driver->gpio1_dev, (void*)driver->spi_dev);
+
+    // Configure CS pin (added explicit configuration here)
+    int ret = gpio_pin_configure(driver->gpio1_dev, driver->cs_pin, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure CS pin: %d", ret);
+        return -1; // Critical failure, cannot proceed without CS
+    }
+    gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 1); // Set high initially
+    LOG_DBG("CS pin configured as output and set high");
     
     // Initialize SPI configuration
-    driver->spi_config.operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB | 
+    driver->spi_cfg.operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB | 
                                  SPI_OP_MODE_MASTER;  // Mode 0 (CPOL=0, CPHA=0)
-    driver->spi_config.frequency = 4000000; // 4MHz
-    driver->spi_config.slave = 0;
+    driver->spi_cfg.frequency = 4000000; // 4MHz
+    driver->spi_cfg.slave = 0;
     LOG_DBG("SPI configuration set - Mode: 0, Freq: 4MHz");
     
     // Set function pointers
@@ -92,15 +101,15 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     
     // Initialize display
     LOG_INF("Resetting display");
-    // driver->reset(driver);
-    LOG_DBG("Reset complete, waiting 20ms");
-    k_msleep(20);
+    driver->reset(driver); // Call reset before commands
+    LOG_DBG("Reset complete, waiting 100ms for stabilization"); // Increased delay
+    k_msleep(100);
     
     // Send initialization commands for 1.54" display
     LOG_INF("Sending initialization commands");
     
     // Software reset
-    LOG_DBG("Sending software reset command");
+    LOG_DBG("Sending software reset command (0x12)");
     driver->write_command(driver, 0x12);
     driver->wait_while_busy(driver, "software reset", 20);
     LOG_DBG("Software reset complete");
@@ -205,7 +214,7 @@ static void epd_write_command_impl(epd_driver_t* driver, uint8_t command) {
         .count = 1
     };
     
-    ret = spi_write(driver->spi_dev, &driver->spi_config, &tx);
+    ret = spi_write(driver->spi_dev, &driver->spi_cfg, &tx);
     if (ret != 0) {
         LOG_ERR("SPI write failed: %d", ret);
     } else {
@@ -241,7 +250,7 @@ static void epd_write_data_impl(epd_driver_t* driver, uint8_t data) {
         .count = 1
     };
     
-    spi_write(driver->spi_dev, &driver->spi_config, &tx);
+    spi_write(driver->spi_dev, &driver->spi_cfg, &tx);
     
     // Set CS high to end transaction
     gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 1);
@@ -274,7 +283,7 @@ static void epd_reset_impl(epd_driver_t* driver) {
     int ret = gpio_pin_configure(driver->gpio0_dev, driver->rst_pin, GPIO_OUTPUT);
     if (ret != 0) {
         LOG_ERR("Failed to configure RST pin as output: %d", ret);
-        return;
+        // Do not return here; try to proceed with the reset sequence.
     }
     LOG_DBG("RST pin configured as output");
     
@@ -283,15 +292,14 @@ static void epd_reset_impl(epd_driver_t* driver) {
     ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
     if (ret != 0) {
         LOG_ERR("Failed to set RST pin high: %d", ret);
-        // return;
+        // Do not return here
     }
     
     // Verify the pin state
     int val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
     LOG_DBG("RST pin state after setting high: %d", val);
     if (val != 1) {
-        LOG_ERR("RST pin not set high, got: %d", val);
-        // return;
+        LOG_WRN("RST pin not set high, got: %d", val); // Changed to Warning
     }
     
     // Wait for power to stabilize
@@ -303,15 +311,14 @@ static void epd_reset_impl(epd_driver_t* driver) {
     ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 0);
     if (ret != 0) {
         LOG_ERR("Failed to set RST pin low: %d", ret);
-        // return;
+        // Do not return here
     }
     
     // Verify the pin state
     val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
     LOG_DBG("RST pin state after setting low: %d", val);
     if (val != 0) {
-        LOG_ERR("RST pin not set low, got: %d", val);
-        // return;
+        LOG_WRN("RST pin not set low, got: %d", val); // Changed to Warning
     }
     
     // Wait for reset pulse
@@ -323,15 +330,14 @@ static void epd_reset_impl(epd_driver_t* driver) {
     ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
     if (ret != 0) {
         LOG_ERR("Failed to set RST pin high: %d", ret);
-        return;
+        // Do not return here
     }
     
     // Verify the pin state
     val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
     LOG_DBG("RST pin state after end reset: %d", val);
     if (val != 1) {
-        LOG_ERR("RST pin not set high after reset, got: %d", val);
-        return;
+        LOG_WRN("RST pin not set high after reset, got: %d", val); // Changed to Warning
     }
     
     // Wait for display to stabilize after reset
@@ -519,4 +525,4 @@ void epd_refresh_area(epd_driver_t* driver, int16_t x, int16_t y, int16_t w, int
     driver->write_command(driver, EPD_CMD_MASTER_ACTIVATION);
     driver->wait_while_busy(driver, "refresh area", driver->partial_refresh_time);
     driver->power_is_on = true;
-} 
+}
