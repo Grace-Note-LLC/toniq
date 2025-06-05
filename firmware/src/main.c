@@ -133,7 +133,7 @@ int main(void) {
 
 	while (true) {
 		int gforce_z = take_sample();
-		if (gforce_z <= -10000) {
+		if (gforce_z <= 10000) {
 			int tds_val = read_tds();
 			printk("tds_val: %d", tds_val);
 		}
