@@ -285,6 +285,7 @@ static void epd_reset_impl(epd_driver_t* driver) {
         LOG_ERR("Failed to configure RST pin as output: %d", ret);
         // Do not return here; try to proceed with the reset sequence.
     }
+    k_msleep(50); // Add a small delay here
     LOG_DBG("RST pin configured as output");
     
     // Initial state - RST high

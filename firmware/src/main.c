@@ -146,7 +146,7 @@ int main(void) {
     LOG_INF("Clearing screen to white");
     epd_clear_screen(&display, 0xFF);
     LOG_INF("Screen cleared");
-    k_msleep(100);  // Longer delay after clear
+    k_msleep(10000);  // Longer delay after clear
 
     // Initialize display buffer (all white)
     LOG_INF("Initializing display buffer");

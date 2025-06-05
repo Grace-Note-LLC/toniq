@@ -1,0 +1,1469 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: include/bitmaps/
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+include/
+  eink/
+    epd_driver.h
+  bluetooth.h
+  tds.h
+  ultrasonic.h
+src/
+  bluetooth.c
+  epd_driver.c
+  main.c
+  tds.c
+  ultrasonic.c
+.gitignore
+CMakeLists.txt
+default.overlay
+Justfile
+prj.conf
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="include/eink/epd_driver.h">
+#ifndef EPD_DRIVER_H
+#define EPD_DRIVER_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/spi.h>
+
+// Display dimensions
+#define EPD_WIDTH 200
+#define EPD_HEIGHT 200
+#define EPD_BUFFER_SIZE ((EPD_WIDTH * EPD_HEIGHT) / 8)
+
+// Display commands
+#define EPD_CMD_POWER_SETTING 0x01
+#define EPD_CMD_POWER_ON 0x04
+#define EPD_CMD_PANEL_SETTING 0x00
+#define EPD_CMD_DISPLAY_REFRESH 0x12
+#define EPD_CMD_DEEP_SLEEP 0x10
+#define EPD_CMD_DATA_START_TRANSMISSION 0x13
+#define EPD_CMD_DISPLAY_UPDATE_CONTROL 0x22
+#define EPD_CMD_MASTER_ACTIVATION 0x20
+
+// Forward declaration of the driver struct
+typedef struct epd_driver epd_driver_t;
+
+// Display struct (replaces the C++ class)
+struct epd_driver {
+    // Device pointers
+    const struct device* spi_dev;
+    const struct device* gpio0_dev;
+    const struct device* gpio1_dev;
+    
+    // Pin configuration
+    int16_t cs_pin;
+    int16_t dc_pin;
+    int16_t rst_pin;
+    int16_t busy_pin;
+    
+    // Display state
+    bool power_is_on;
+    bool using_partial_mode;
+    bool hibernating;
+    bool init_display_done;
+    bool initial_refresh;
+    bool initial_write;
+    
+    // Display buffer
+    uint8_t* buffer;
+    uint32_t buffer_size;
+    
+    // Function pointers (replaces virtual methods)
+    void (*write_command)(epd_driver_t* driver, uint8_t command);
+    void (*write_data)(epd_driver_t* driver, uint8_t data);
+    void (*wait_while_busy)(epd_driver_t* driver, const char* msg, uint16_t timeout);
+    void (*reset)(epd_driver_t* driver);
+    void (*refresh)(epd_driver_t* driver, bool partial_update_mode);
+    void (*power_off)(epd_driver_t* driver);
+    void (*hibernate)(epd_driver_t* driver);
+    
+    // Timing parameters
+    uint16_t power_on_time;
+    uint16_t power_off_time;
+    uint16_t full_refresh_time;
+    uint16_t partial_refresh_time;
+
+    // SPI configuration
+    struct spi_config spi_cfg;
+};
+
+// Function declarations (replaces class methods)
+
+// Initialization
+int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_pin, int16_t busy_pin,
+             const struct device* gpio0_dev, const struct device* gpio1_dev, const struct device* spi_dev);
+void epd_deinit(epd_driver_t* driver);
+
+// Display operations
+void epd_clear_screen(epd_driver_t* driver, uint8_t value);
+void epd_write_screen_buffer(epd_driver_t* driver, uint8_t value);
+void epd_write_image(epd_driver_t* driver, const uint8_t* bitmap, int16_t x, int16_t y, 
+                    int16_t w, int16_t h, bool invert, bool mirror_y);
+void epd_write_image_part(epd_driver_t* driver, const uint8_t* bitmap, 
+                         int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+                         int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y);
+
+// Display updates
+void epd_refresh(epd_driver_t* driver, bool partial_update_mode);
+void epd_refresh_area(epd_driver_t* driver, int16_t x, int16_t y, int16_t w, int16_t h);
+
+// Power management
+void epd_power_on(epd_driver_t* driver);
+void epd_power_off(epd_driver_t* driver);
+void epd_hibernate(epd_driver_t* driver);
+
+// Helper functions
+void epd_set_partial_ram_area(epd_driver_t* driver, uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+void epd_set_rotation(epd_driver_t* driver, uint8_t rotation);
+void epd_set_text_color(epd_driver_t* driver, uint16_t color);
+void epd_set_font(epd_driver_t* driver, const void* font);
+
+#endif // EPD_DRIVER_H
+</file>
+
+<file path="include/bluetooth.h">
+#ifndef BLUETOOTH_H
+#define BLUETOOTH_H
+
+#include <zephyr/types.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/byteorder.h>
+#include <stddef.h>
+
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/gap.h>
+
+#define DEVICE_NAME "water.ai"
+#define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
+
+#define BT_BYTES_LIST_LE16(_v)      \
+        (((_v) >>  0) & 0xFFU),     \
+        (((_v) >>  8) & 0xFFU)      \
+
+static const struct bt_data ad[] = {
+	BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
+	BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE, BT_BYTES_LIST_LE16(0x05C1))
+};
+
+static const struct bt_data sd[] = {
+	BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
+};
+
+void bt_ready(int err);
+
+#endif // BLUETOOTH_H
+</file>
+
+<file path="include/tds.h">
+#ifndef TDS_H
+#define TDS_H
+#include <stdint.h>
+#include <stdbool.h>
+// https://docs.zephyrproject.org/latest/samples/drivers/adc/adc_dt/README.html
+
+bool init_tds(void);
+int32_t read_tds(void);
+
+#endif // TDS_H
+</file>
+
+<file path="include/ultrasonic.h">
+#ifndef ULTRASONIC_H
+#define ULTRASONIC_H
+
+int read_ultrasonic(void);
+
+#endif // ULTRASONIC_H
+</file>
+
+<file path="src/bluetooth.c">
+#include "bluetooth.h"
+
+void bt_ready(int err)
+{
+	char addr_s[BT_ADDR_LE_STR_LEN];
+	bt_addr_le_t addr = {0};
+	size_t count = 1;
+
+	if (err) {
+		printk("Bluetooth init failed (err %d)\n", err);
+		return;
+	}
+
+	printk("Bluetooth initialized\n");
+
+	/* Start advertising */
+    err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad),
+              sd, ARRAY_SIZE(sd));
+	if (err) {
+		printk("Advertising failed to start (err %d)\n", err);
+		return;
+	}
+
+
+	/* For connectable advertising you would use
+	 * bt_le_oob_get_local().  For non-connectable non-identity
+	 * advertising an non-resolvable private address is used;
+	 * there is no API to retrieve that.
+	 */
+
+	bt_id_get(&addr, &count);
+	bt_addr_le_to_str(&addr, addr_s, sizeof(addr_s));
+
+	printk("Beacon started, advertising as %s\n", addr_s);
+}
+</file>
+
+<file path="src/epd_driver.c">
+#include "eink/epd_driver.h"
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/sys/mem_manage.h>
+#include <zephyr/logging/log.h>
+#include <string.h>
+
+LOG_MODULE_REGISTER(epd_driver, LOG_LEVEL_DBG);
+
+// Static buffer for display data
+static uint8_t display_buffer[EPD_BUFFER_SIZE];
+
+// Static function declarations
+static void epd_write_command_impl(epd_driver_t* driver, uint8_t command);
+static void epd_write_data_impl(epd_driver_t* driver, uint8_t data);
+static void epd_wait_while_busy_impl(epd_driver_t* driver, const char* msg, uint16_t timeout);
+static void epd_reset_impl(epd_driver_t* driver);
+static void epd_refresh_impl(epd_driver_t* driver, bool partial_update_mode);
+static void epd_power_off_impl(epd_driver_t* driver);
+static void epd_hibernate_impl(epd_driver_t* driver);
+static void epd_set_partial_ram_area_impl(epd_driver_t* driver, uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+
+// // Helper function for busy waiting
+// static void busy_wait_ms(uint32_t ms) {
+//     // Assuming 64MHz system clock, each cycle is ~15.6ns
+//     // So 1ms is roughly 64,000 cycles
+//     const uint32_t cycles_per_ms = 64000;
+//     for (uint32_t i = 0; i < ms * cycles_per_ms; i++) {
+//         __asm__ __volatile__("nop");
+//     }
+// }
+
+// Initialize the display driver
+int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_pin, int16_t busy_pin,
+             const struct device* gpio0_dev, const struct device* gpio1_dev, const struct device* spi_dev) {
+    if (!driver) {
+        LOG_ERR("Driver pointer is NULL");
+        return -1;
+    }
+
+    LOG_INF("Starting display initialization for 1.54\" display");
+    
+    // Initialize driver structure
+    memset(driver, 0, sizeof(epd_driver_t));
+    LOG_DBG("Driver structure cleared");
+    
+    // Set pin configuration
+    driver->cs_pin = cs_pin;
+    driver->dc_pin = dc_pin;
+    driver->rst_pin = rst_pin;
+    driver->busy_pin = busy_pin;
+    LOG_DBG("Pin configuration set - CS: %d, DC: %d, RST: %d, BUSY: %d", 
+            cs_pin, dc_pin, rst_pin, busy_pin);
+    
+    // Store device pointers
+    driver->gpio0_dev = gpio0_dev;
+    driver->gpio1_dev = gpio1_dev;
+    driver->spi_dev = spi_dev;
+    LOG_DBG("Device pointers stored - GPIO0: %p, GPIO1: %p, SPI: %p", 
+            (void*)driver->gpio0_dev, (void*)driver->gpio1_dev, (void*)driver->spi_dev);
+
+    // Configure CS pin (added explicit configuration here)
+    int ret = gpio_pin_configure(driver->gpio1_dev, driver->cs_pin, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure CS pin: %d", ret);
+        return -1; // Critical failure, cannot proceed without CS
+    }
+    gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 1); // Set high initially
+    LOG_DBG("CS pin configured as output and set high");
+    
+    // Initialize SPI configuration
+    driver->spi_cfg.operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB | 
+                                 SPI_OP_MODE_MASTER;  // Mode 0 (CPOL=0, CPHA=0)
+    driver->spi_cfg.frequency = 4000000; // 4MHz
+    driver->spi_cfg.slave = 0;
+    LOG_DBG("SPI configuration set - Mode: 0, Freq: 4MHz");
+    
+    // Set function pointers
+    driver->write_command = epd_write_command_impl;
+    driver->write_data = epd_write_data_impl;
+    driver->wait_while_busy = epd_wait_while_busy_impl;
+    driver->reset = epd_reset_impl;
+    driver->refresh = epd_refresh_impl;
+    driver->power_off = epd_power_off_impl;
+    driver->hibernate = epd_hibernate_impl;
+    LOG_DBG("Function pointers set");
+    
+    // Set timing parameters for 1.54" display
+    driver->power_on_time = 200;  // Increased for 1.54"
+    driver->power_off_time = 200; // Increased for 1.54"
+    driver->full_refresh_time = 3000; // Increased for 1.54"
+    driver->partial_refresh_time = 1000; // Increased for 1.54"
+    LOG_DBG("Timing parameters set for 1.54\" display");
+    
+    // Use static buffer
+    driver->buffer = display_buffer;
+    driver->buffer_size = EPD_BUFFER_SIZE;
+    LOG_DBG("Buffer configured - Size: %d bytes", EPD_BUFFER_SIZE);
+    
+    // Initialize display
+    LOG_INF("Resetting display");
+    driver->reset(driver); // Call reset before commands
+    LOG_DBG("Reset complete, waiting 100ms for stabilization"); // Increased delay
+    k_msleep(100);
+    
+    // Send initialization commands for 1.54" display
+    LOG_INF("Sending initialization commands");
+    
+    // Software reset
+    LOG_DBG("Sending software reset command (0x12)");
+    driver->write_command(driver, 0x12);
+    driver->wait_while_busy(driver, "software reset", 20);
+    LOG_DBG("Software reset complete");
+    
+    LOG_DBG("Sending Driver Output Control (0x01)");
+    driver->write_command(driver, 0x01);
+    driver->write_data(driver, 0xC7); // (200-1) = 199 decimal
+    driver->write_data(driver, 0x00);
+    driver->write_data(driver, 0x00); // Gate Scan Start Position LSB 00, MSB 00 = 0
+
+    LOG_DBG("Sending Border Waveform Control (0x3C)");
+    driver->write_command(driver, 0x3C);
+    driver->write_data(driver, 0x05); // Refer to GDEH0154D67 datasheet or GxEPD2 for exact value meaning
+
+    // This command (0x18 Temperature Sensor) is often optional for basic display operation but good for consistency.
+    LOG_DBG("Sending Temperature Sensor Control (0x18)");
+    driver->write_command(driver, 0x18);
+    driver->write_data(driver, 0x80); // Enable internal sensor
+
+    // The original epd_driver.c has many other commands (Power setting, Booster, PLL, VCM, VCOM)
+    // These might be necessary or might conflict. Start with the GxEPD2 minimal init.
+    // If issues persist, consult the GDEH0154D67 datasheet to see if commands like
+    // Power Setting (0x01 with different params), Booster (0x06), Power On (0x04)
+    // are needed *before* or *interspersed* with the GxEPD2 sequence.
+    // GxEPD2 typically handles power on/off via separate _PowerOn() / _PowerOff() methods which are
+    // called by refresh routines. Your epd_driver.c has 0x04 (POWER_ON).
+    // For now, let's assume the GxEPD2 sequence above is more targeted.
+    // Ensure Power On (0x04) is called if not part of the refresh sequence logic.
+    // The GxEPD2 lib calls _PowerOn in its refresh/display methods.
+    // Your current epd_driver.c calls POWER_ON (0x04) and waits. This is probably good.
+    // It should be: SW_RESET -> Driver Output -> Border Waveform -> (Optional Temp) -> POWER_ON
+
+    // LOG_DBG("Sending power on command (0x04)");
+    // driver->write_command(driver, 0x04);
+    // driver->wait_while_busy(driver, "power on", driver->power_on_time); // power_on_time might need adjustment
+    // LOG_DBG("Power on complete");
+
+    // // RAM Address and Data Entry Mode settings:
+    // // GxEPD2 calls _setPartialRamArea, which includes Data Entry Mode (0x11).
+    // // It's good to set the data entry mode and initial RAM window.
+    // LOG_DBG("Setting Data Entry Mode (0x11)");
+    // driver->write_command(driver, 0x11);
+    // driver->write_data(driver, 0x03); // X increment, Y increment
+
+    LOG_DBG("Setting RAM X/Y Area and Pointers");
+    // Call epd_set_partial_ram_area_impl to set full screen initially
+    epd_set_partial_ram_area_impl(driver, 0, 0, EPD_WIDTH, EPD_HEIGHT);
+        
+    driver->init_display_done = true;
+    driver->power_is_on = true;
+    LOG_INF("Display initialization complete for 1.54\" display");
+    return 0;
+}
+
+// Deinitialize the display driver
+void epd_deinit(epd_driver_t* driver) {
+    if (!driver) return;
+    
+    // No need to free static buffer
+    driver->buffer = NULL;
+    driver->buffer_size = 0;
+    
+    driver->power_off(driver);
+    driver->hibernate(driver);
+}
+
+// Write a command to the display
+static void epd_write_command_impl(epd_driver_t* driver, uint8_t command) {
+    if (!driver || !driver->spi_dev || !driver->gpio0_dev || !driver->gpio1_dev) {
+        LOG_ERR("Invalid driver state for command write - driver: %p, spi: %p, gpio0: %p, gpio1: %p",
+                (void*)driver, 
+                (void*)(driver ? driver->spi_dev : NULL),
+                (void*)(driver ? driver->gpio0_dev : NULL),
+                (void*)(driver ? driver->gpio1_dev : NULL));
+        return;
+    }
+    
+    LOG_DBG("Writing command: 0x%02x", command);
+    
+    // Set DC low for command
+    int ret = gpio_pin_set(driver->gpio0_dev, driver->dc_pin, 0);
+    if (ret != 0) {
+        LOG_ERR("Failed to set DC pin: %d", ret);
+        return;
+    }
+    LOG_DBG("DC pin set low for command");
+    
+    // Set CS low to start transaction
+    ret = gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 0);
+    if (ret != 0) {
+        LOG_ERR("Failed to set CS pin: %d", ret);
+        return;
+    }
+    LOG_DBG("CS pin set low, starting SPI transaction");
+    
+    const struct spi_buf tx_buf = {
+        .buf = &command,
+        .len = 1
+    };
+    const struct spi_buf_set tx = {
+        .buffers = &tx_buf,
+        .count = 1
+    };
+    
+    ret = spi_write(driver->spi_dev, &driver->spi_cfg, &tx);
+    if (ret != 0) {
+        LOG_ERR("SPI write failed: %d", ret);
+    } else {
+        LOG_DBG("SPI write successful");
+    }
+    
+    // Set CS high to end transaction
+    ret = gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 1);
+    if (ret != 0) {
+        LOG_ERR("Failed to clear CS pin: %d", ret);
+    } else {
+        LOG_DBG("CS pin set high, transaction complete");
+    }
+    
+    LOG_DBG("Command write complete");
+}
+
+// Write data to the display
+static void epd_write_data_impl(epd_driver_t* driver, uint8_t data) {
+    if (!driver || !driver->spi_dev || !driver->gpio0_dev || !driver->gpio1_dev) return;
+    
+    // Set DC high for data
+    gpio_pin_set(driver->gpio0_dev, driver->dc_pin, 1);
+    // Set CS low to start transaction
+    gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 0);
+    
+    const struct spi_buf tx_buf = {
+        .buf = &data,
+        .len = 1
+    };
+    const struct spi_buf_set tx = {
+        .buffers = &tx_buf,
+        .count = 1
+    };
+    
+    spi_write(driver->spi_dev, &driver->spi_cfg, &tx);
+    
+    // Set CS high to end transaction
+    gpio_pin_set(driver->gpio1_dev, driver->cs_pin, 1);
+}
+
+// Wait while display is busy
+static void epd_wait_while_busy_impl(epd_driver_t* driver, const char* msg, uint16_t timeout) {
+    if (!driver || !driver->gpio0_dev) return;
+    
+    uint32_t start_time = k_uptime_get_32();
+    while (gpio_pin_get(driver->gpio0_dev, driver->busy_pin) == 1) {
+        if (k_uptime_get_32() - start_time > timeout) {
+            break;
+        }
+        k_msleep(10);
+    }
+}
+
+// Reset the display
+static void epd_reset_impl(epd_driver_t* driver) {
+    if (!driver || !driver->gpio0_dev) {
+        LOG_ERR("Invalid driver state for reset - driver: %p, gpio0: %p", 
+                (void*)driver, (void*)(driver ? driver->gpio0_dev : NULL));
+        return;
+    }
+    
+    LOG_INF("Starting display reset sequence");
+    
+    // Ensure RST pin is configured as output
+    int ret = gpio_pin_configure(driver->gpio0_dev, driver->rst_pin, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure RST pin as output: %d", ret);
+        // Do not return here; try to proceed with the reset sequence.
+    }
+    LOG_DBG("RST pin configured as output");
+    
+    // Initial state - RST high
+    LOG_DBG("Setting RST pin high (initial state)");
+    ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
+    if (ret != 0) {
+        LOG_ERR("Failed to set RST pin high: %d", ret);
+        // Do not return here
+    }
+    
+    // Verify the pin state
+    int val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
+    LOG_DBG("RST pin state after setting high: %d", val);
+    if (val != 1) {
+        LOG_WRN("RST pin not set high, got: %d", val); // Changed to Warning
+    }
+    
+    // Wait for power to stabilize
+    LOG_DBG("Waiting 100ms for power stabilization");
+    k_msleep(100);
+    
+    // Reset pulse - RST low
+    LOG_DBG("Setting RST pin low (reset pulse)");
+    ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 0);
+    if (ret != 0) {
+        LOG_ERR("Failed to set RST pin low: %d", ret);
+        // Do not return here
+    }
+    
+    // Verify the pin state
+    val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
+    LOG_DBG("RST pin state after setting low: %d", val);
+    if (val != 0) {
+        LOG_WRN("RST pin not set low, got: %d", val); // Changed to Warning
+    }
+    
+    // Wait for reset pulse
+    LOG_DBG("Waiting 20ms during reset pulse");
+    k_msleep(20);
+    
+    // End reset - RST high
+    LOG_DBG("Setting RST pin high (end reset)");
+    ret = gpio_pin_set(driver->gpio0_dev, driver->rst_pin, 1);
+    if (ret != 0) {
+        LOG_ERR("Failed to set RST pin high: %d", ret);
+        // Do not return here
+    }
+    
+    // Verify the pin state
+    val = gpio_pin_get(driver->gpio0_dev, driver->rst_pin);
+    LOG_DBG("RST pin state after end reset: %d", val);
+    if (val != 1) {
+        LOG_WRN("RST pin not set high after reset, got: %d", val); // Changed to Warning
+    }
+    
+    // Wait for display to stabilize after reset
+    LOG_DBG("Waiting 200ms after reset for display stabilization");
+    k_msleep(200);
+    
+    LOG_INF("Reset sequence complete");
+}
+
+// Set partial RAM area
+static void epd_set_partial_ram_area_impl(epd_driver_t* driver, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    driver->write_command(driver, 0x11); // set ram entry mode
+    driver->write_data(driver, 0x03);    // x increase, y increase : normal mode
+    driver->write_command(driver, 0x44);
+    driver->write_data(driver, x / 8);
+    driver->write_data(driver, (x + w - 1) / 8);
+    driver->write_command(driver, 0x45);
+    driver->write_data(driver, y % 256);
+    driver->write_data(driver, y / 256);
+    driver->write_data(driver, (y + h - 1) % 256);
+    driver->write_data(driver, (y + h - 1) / 256);
+    driver->write_command(driver, 0x4e);
+    driver->write_data(driver, x / 8);
+    driver->write_command(driver, 0x4f);
+    driver->write_data(driver, y % 256);
+    driver->write_data(driver, y / 256);
+}
+
+// Clear the screen
+void epd_clear_screen(epd_driver_t* driver, uint8_t value) {
+    if (!driver || !driver->init_display_done) return;
+    
+    driver->write_command(driver, 0x24); // write RAM for black(0)/white (1)
+    for (uint32_t i = 0; i < EPD_BUFFER_SIZE; i++) {
+        driver->write_data(driver, value);
+    }
+    driver->refresh(driver, false);
+}
+
+// Write screen buffer
+void epd_write_screen_buffer(epd_driver_t* driver, uint8_t value) {
+    if (!driver || !driver->init_display_done) return;
+    
+    if (driver->initial_write) {
+        epd_clear_screen(driver, value);
+        return;
+    }
+    
+    driver->write_command(driver, 0x24);
+    for (uint32_t i = 0; i < EPD_BUFFER_SIZE; i++) {
+        driver->write_data(driver, value);
+    }
+}
+
+// Write image to display
+void epd_write_image(epd_driver_t* driver, const uint8_t* bitmap, int16_t x, int16_t y, 
+                    int16_t w, int16_t h, bool invert, bool mirror_y) {
+    if (!driver || !driver->init_display_done || !bitmap) return;
+    
+    int16_t wb = (w + 7) / 8; // width bytes, bitmaps are padded
+    x -= x % 8; // byte boundary
+    w = wb * 8; // byte boundary
+    
+    int16_t x1 = x < 0 ? 0 : x;
+    int16_t y1 = y < 0 ? 0 : y;
+    int16_t w1 = x + w < EPD_WIDTH ? w : EPD_WIDTH - x;
+    int16_t h1 = y + h < EPD_HEIGHT ? h : EPD_HEIGHT - y;
+    
+    int16_t dx = x1 - x;
+    int16_t dy = y1 - y;
+    w1 -= dx;
+    h1 -= dy;
+    
+    if ((w1 <= 0) || (h1 <= 0)) return;
+    
+    if (driver->initial_write) {
+        epd_write_screen_buffer(driver, 0xFF);
+    }
+    
+    epd_set_partial_ram_area_impl(driver, x1, y1, w1, h1);
+    driver->write_command(driver, 0x24);
+    
+    for (int16_t i = 0; i < h1; i++) {
+        for (int16_t j = 0; j < w1 / 8; j++) {
+            uint8_t data;
+            int16_t idx = mirror_y ? j + dx / 8 + ((h - 1 - (i + dy))) * wb : j + dx / 8 + (i + dy) * wb;
+            data = bitmap[idx];
+            if (invert) data = ~data;
+            driver->write_data(driver, data);
+        }
+    }
+}
+
+// Refresh implementation
+static void epd_refresh_impl(epd_driver_t* driver, bool partial_update_mode) {
+    printk("epd_refresh: Starting refresh (partial: %d)\n", partial_update_mode);
+    if (!driver || !driver->init_display_done) {
+        printk("epd_refresh: Invalid driver state\n");
+        return;
+    }
+    
+    if (!partial_update_mode) {
+        printk("epd_refresh: Sending refresh commands\n");
+        driver->write_command(driver, EPD_CMD_DISPLAY_UPDATE_CONTROL);
+        driver->write_data(driver, 0xf7);
+        driver->write_command(driver, EPD_CMD_MASTER_ACTIVATION);
+        driver->wait_while_busy(driver, "refresh", driver->full_refresh_time);
+        printk("epd_refresh: Refresh complete\n");
+    }
+}
+
+// Power off implementation
+static void epd_power_off_impl(epd_driver_t* driver) {
+    printk("epd_power_off: Starting power off sequence\n");
+    if (!driver || !driver->init_display_done) {
+        printk("epd_power_off: Invalid driver state\n");
+        return;
+    }
+    
+    if (driver->power_is_on) {
+        printk("epd_power_off: Sending power off commands\n");
+        driver->write_command(driver, EPD_CMD_DISPLAY_UPDATE_CONTROL);
+        driver->write_data(driver, 0x83);
+        driver->write_command(driver, EPD_CMD_MASTER_ACTIVATION);
+        driver->wait_while_busy(driver, "power off", driver->power_off_time);
+        driver->power_is_on = false;
+        printk("epd_power_off: Power off complete\n");
+    } else {
+        printk("epd_power_off: Display already powered off\n");
+    }
+}
+
+// Hibernate implementation
+static void epd_hibernate_impl(epd_driver_t* driver) {
+    if (!driver || !driver->init_display_done) return;
+    
+    if (!driver->hibernating) {
+        driver->write_command(driver, EPD_CMD_DEEP_SLEEP);
+        driver->write_data(driver, 0x01);
+        driver->hibernating = true;
+    }
+}
+
+// Refresh the display
+void epd_refresh(epd_driver_t* driver, bool partial_update_mode) {
+    if (!driver || !driver->init_display_done) return;
+    
+    if (partial_update_mode) {
+        epd_refresh_area(driver, 0, 0, EPD_WIDTH, EPD_HEIGHT);
+    } else {
+        driver->write_command(driver, EPD_CMD_DISPLAY_UPDATE_CONTROL);
+        driver->write_data(driver, 0xf7);
+        driver->write_command(driver, EPD_CMD_MASTER_ACTIVATION);
+        driver->wait_while_busy(driver, "refresh", driver->full_refresh_time);
+        driver->power_is_on = false;
+    }
+}
+
+// Refresh a specific area
+void epd_refresh_area(epd_driver_t* driver, int16_t x, int16_t y, int16_t w, int16_t h) {
+    if (!driver || !driver->init_display_done) return;
+    
+    if (driver->initial_refresh) {
+        epd_refresh(driver, false);
+        return;
+    }
+    
+    int16_t w1 = x < 0 ? w + x : w;
+    int16_t h1 = y < 0 ? h + y : h;
+    int16_t x1 = x < 0 ? 0 : x;
+    int16_t y1 = y < 0 ? 0 : y;
+    
+    w1 = x1 + w1 < EPD_WIDTH ? w1 : EPD_WIDTH - x1;
+    h1 = y1 + h1 < EPD_HEIGHT ? h1 : EPD_HEIGHT - y1;
+    
+    if ((w1 <= 0) || (h1 <= 0)) return;
+    
+    w1 += x1 % 8;
+    if (w1 % 8 > 0) w1 += 8 - w1 % 8;
+    x1 -= x1 % 8;
+    
+    epd_set_partial_ram_area_impl(driver, x1, y1, w1, h1);
+    driver->write_command(driver, EPD_CMD_DISPLAY_UPDATE_CONTROL);
+    driver->write_data(driver, 0xfc);
+    driver->write_command(driver, EPD_CMD_MASTER_ACTIVATION);
+    driver->wait_while_busy(driver, "refresh area", driver->partial_refresh_time);
+    driver->power_is_on = true;
+}
+</file>
+
+<file path="src/main.c">
+#include <zephyr/kernel.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/spi.h>
+#include <zephyr/logging/log.h>
+#include "eink/epd_driver.h"
+
+LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
+
+// Device tree nodes for SPI and GPIO
+#define SPI1_NODE DT_NODELABEL(spi1) // this defines SCK: 31, MOSI/DIN: 30
+static const struct device* spi1_dev = DEVICE_DT_GET(SPI1_NODE);
+const struct device* gpio0_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
+const struct device* gpio1_dev = DEVICE_DT_GET(DT_NODELABEL(gpio1));
+
+// Increase stack size for display operations
+#define STACK_SIZE 4096
+#define PRIORITY 5
+
+// Pin definitions
+#define EPD_CS_PIN 7    // GPIO1_7
+#define EPD_DC_PIN 21   // GPIO0_21
+#define EPD_RST_PIN 26  // GPIO0_26 (Changed from 24 to 26 to match default.overlay D14)
+#define EPD_BUSY_PIN 22 // GPIO0_22
+
+// Display dimensions (200x200 for D variant)
+#define EPD_2IN13D_WIDTH (EPD_WIDTH)
+#define EPD_2IN13D_HEIGHT (EPD_HEIGHT)
+
+// Display instance
+static epd_driver_t display;
+
+// Static buffer for display data
+static uint8_t display_buffer[EPD_BUFFER_SIZE];
+
+// Stack for main thread
+K_THREAD_STACK_DEFINE(main_stack, STACK_SIZE);
+
+int main(void) {
+    // Check devices are ready
+    if (!device_is_ready(spi1_dev) || !device_is_ready(gpio0_dev) || !device_is_ready(gpio1_dev)) {
+        LOG_ERR("Devices not ready");
+        return 0;
+    }
+
+    LOG_INF("Devices ready - GPIO0: %p, GPIO1: %p, SPI: %p", gpio0_dev, gpio1_dev, spi1_dev);
+    k_msleep(100);  // Longer delay to ensure stable power
+
+    // Configure GPIO pins
+    LOG_INF("Starting GPIO configuration...");
+    k_msleep(10);
+
+    // Configure and verify DC pin
+    LOG_INF("Configuring DC pin (GPIO0_%d)", EPD_DC_PIN);
+    int ret = gpio_pin_configure(gpio0_dev, EPD_DC_PIN, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure DC pin: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    int val = gpio_pin_get(gpio0_dev, EPD_DC_PIN);
+    LOG_INF("DC pin state after config: %d", val);
+    ret = gpio_pin_set(gpio0_dev, EPD_DC_PIN, 1);
+    if (ret != 0) {
+        LOG_ERR("Failed to set DC pin high: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    val = gpio_pin_get(gpio0_dev, EPD_DC_PIN);
+    LOG_INF("DC pin state after set high: %d", val);
+    k_msleep(10);
+
+    // Configure and verify BUSY pin
+    LOG_INF("Configuring BUSY pin (GPIO0_%d)", EPD_BUSY_PIN);
+    ret = gpio_pin_configure(gpio0_dev, EPD_BUSY_PIN, GPIO_INPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure BUSY pin: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    val = gpio_pin_get(gpio0_dev, EPD_BUSY_PIN);
+    LOG_INF("BUSY pin state: %d", val);
+    k_msleep(10);
+
+    // Configure and verify RST pin
+    LOG_INF("Configuring RST pin (GPIO0_%d)", EPD_RST_PIN);
+    ret = gpio_pin_configure(gpio0_dev, EPD_RST_PIN, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure RST pin: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    val = gpio_pin_get(gpio0_dev, EPD_RST_PIN);
+    LOG_INF("RST pin state after config: %d", val);
+    ret = gpio_pin_set(gpio0_dev, EPD_RST_PIN, 1);
+    if (ret != 0) {
+        LOG_ERR("Failed to set RST pin high: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    val = gpio_pin_get(gpio0_dev, EPD_RST_PIN);
+    LOG_INF("RST pin state after set high: %d", val);
+    k_msleep(10);
+
+    // Configure and verify CS pin
+    LOG_INF("Configuring CS pin (GPIO1_%d)", EPD_CS_PIN);
+    ret = gpio_pin_configure(gpio1_dev, EPD_CS_PIN, GPIO_OUTPUT);
+    if (ret != 0) {
+        LOG_ERR("Failed to configure CS pin: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    val = gpio_pin_get(gpio1_dev, EPD_CS_PIN);
+    LOG_INF("CS pin state after config: %d", val);
+    ret = gpio_pin_set(gpio1_dev, EPD_CS_PIN, 1);
+    if (ret != 0) {
+        LOG_ERR("Failed to set CS pin high: %d", ret);
+        return 0;
+    }
+    k_msleep(5);
+    val = gpio_pin_get(gpio1_dev, EPD_CS_PIN);
+    LOG_INF("CS pin state after set high: %d", val);
+    k_msleep(10);
+
+    LOG_INF("GPIO configuration complete");
+    k_msleep(100);  // Longer delay after GPIO config
+
+    // Store device pointers
+    LOG_INF("Storing device pointers");
+    display.spi_dev = spi1_dev;
+    display.gpio0_dev = gpio0_dev;
+    display.gpio1_dev = gpio1_dev;
+    LOG_INF("Device pointers stored");
+    k_msleep(100);  // Longer delay after storing pointers
+
+    // Initialize display
+    LOG_INF("Initializing display");
+    if (epd_init(&display, EPD_CS_PIN, EPD_DC_PIN, EPD_RST_PIN, EPD_BUSY_PIN, gpio0_dev, gpio1_dev, spi1_dev) != 0) {
+        LOG_ERR("Display init failed");
+        return 0;
+    }
+    LOG_INF("Display initialized");
+    k_msleep(100);  // Longer delay after init
+    
+    // Clear screen to white
+    LOG_INF("Clearing screen to white");
+    epd_clear_screen(&display, 0xFF);
+    LOG_INF("Screen cleared");
+    k_msleep(10000);  // Longer delay after clear
+
+    // Initialize display buffer (all white)
+    LOG_INF("Initializing display buffer");
+    memset(display_buffer, 0xFF, EPD_BUFFER_SIZE);
+    LOG_INF("Display buffer initialized");
+    k_msleep(100);  // Longer delay after buffer init
+
+    // Draw a simple pattern in the middle
+    LOG_INF("Drawing test pattern");
+    for (int i = 0; i < 20; i++) {
+        display_buffer[100 * (EPD_WIDTH / 8) + i] = 0x55;  // Draw a black line
+    }
+    LOG_INF("Pattern drawn");
+    k_msleep(100);  // Longer delay after drawing
+    
+    // Write to display and refresh
+    LOG_INF("Writing pattern to display");
+    epd_write_image(&display, display_buffer, 0, 0, EPD_WIDTH, EPD_HEIGHT, false, false);
+    LOG_INF("Pattern written to display");
+    k_msleep(100);  // Longer delay after write
+
+    LOG_INF("Refreshing display");
+    epd_refresh(&display, false);
+    LOG_INF("Display refreshed");
+    k_msleep(2000);  // Wait 2 seconds to see the update
+
+    // Power off
+    LOG_INF("Powering off display");
+    display.power_off(&display);
+    LOG_INF("Display powered off");
+    
+    // Done
+    while (1) {
+        k_msleep(1000);
+        LOG_INF("Still alive...");
+    }
+
+    return 0;
+}
+</file>
+
+<file path="src/tds.c">
+#include "tds.h"
+
+#include <inttypes.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/adc.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
+#include <zephyr/sys/util.h>
+
+#if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
+	!DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
+#error "No suitable devicetree overlay specified"
+#endif
+
+#define CHANNEL_NUMBER 0
+#define DT_SPEC_AND_COMMA(node_id, prop, idx) \
+	ADC_DT_SPEC_GET_BY_IDX(node_id, idx),
+
+/* Data of ADC io-channels specified in devicetree. */
+static const struct adc_dt_spec adc_channels[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels,
+			     DT_SPEC_AND_COMMA)
+};
+
+uint32_t count = 0;
+uint16_t buf;
+struct adc_sequence sequence;
+
+bool init_tds(void) {
+    int err;
+	sequence = (struct adc_sequence) {
+		.buffer = &buf,
+		/* buffer size in bytes, not number of samples */
+		.buffer_size = sizeof(buf),
+	};
+
+	/* Configure channels individually prior to sampling. */
+    if (!adc_is_ready_dt(&adc_channels[CHANNEL_NUMBER])) {
+        printk("ADC controller device %s not ready\n", adc_channels[CHANNEL_NUMBER].dev->name);
+        return false;
+    }
+
+    err = adc_channel_setup_dt(&adc_channels[CHANNEL_NUMBER]);
+    if (err < 0) {
+        printk("Could not setup channel #%d (%d)\n", CHANNEL_NUMBER, err);
+        return false;
+    }
+
+    return true;
+}
+
+int32_t read_tds(void) {
+    int32_t val_mv;
+    int err;
+    printk("- %s, channel %d: ",
+            adc_channels[CHANNEL_NUMBER].dev->name,
+            adc_channels[CHANNEL_NUMBER].channel_id);
+
+    (void)adc_sequence_init_dt(&adc_channels[CHANNEL_NUMBER], &sequence);
+
+    err = adc_read_dt(&adc_channels[CHANNEL_NUMBER], &sequence);
+    if (err < 0) {
+        printk("Could not read (%d)\n", err);
+        return -1;
+    }
+
+    /*
+        * If using differential mode, the 16 bit value
+        * in the ADC sample buffer should be a signed 2's
+        * complement value.
+        */
+    if (adc_channels[CHANNEL_NUMBER].channel_cfg.differential) {
+        val_mv = (int32_t)((int16_t)buf);
+    } else {
+        val_mv = (int32_t)buf;
+    }
+
+    printk("%"PRId32, val_mv);
+    err = adc_raw_to_millivolts_dt(&adc_channels[CHANNEL_NUMBER],
+                        &val_mv);
+    /* conversion to mV may not be supported, skip if not */
+    if (err < 0) {
+        printk(" (value in mV not available)\n");
+    } else {
+        printk(" = %"PRId32" mV\n", val_mv);
+    }
+
+    return val_mv;
+}
+</file>
+
+<file path="src/ultrasonic.c">
+#include "ultrasonic.h"
+
+int read_ultrasonic(void) {
+    return 0;
+}
+</file>
+
+<file path=".gitignore">
+.west/
+bootloader/
+build/
+modules/
+tools/
+zephyr/
+</file>
+
+<file path="CMakeLists.txt">
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.20.0)
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(beacon)
+
+include_directories(include/)
+target_sources(app PRIVATE 
+    src/main.c
+    src/epd_driver.c
+    # src/bluetooth.c
+    # src/tds.c
+    # src/ultrasonic.c
+)
+</file>
+
+<file path="default.overlay">
+/*
+ * Copyright (c) 2017 Linaro Limited
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <nordic/nrf52840_qiaa.dtsi>
+#include <nordic/nrf52840_partition.dtsi>
+#include "./zephyr/boards/nordic/nrf52840dk/nrf52840dk_nrf52840-pinctrl.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "Nordic nRF52840 DK NRF52840";
+	compatible = "nordic,nrf52840-dk-nrf52840";
+
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,uart-mcumgr = &uart0;
+		zephyr,bt-mon-uart = &uart0;
+		zephyr,bt-c2h-uart = &uart0;
+		zephyr,ieee802154 = &ieee802154;
+		zephyr,boot-mode = &boot_mode0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led0: led_0 {
+			gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
+			label = "Green LED 0";
+		};
+
+		led1: led_1 {
+			gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+			label = "Green LED 1";
+		};
+
+		led2: led_2 {
+			gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+			label = "Green LED 2";
+		};
+
+		led3: led_3 {
+			gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+			label = "Green LED 3";
+		};
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+
+		pwm_led0: pwm_led_0 {
+			pwms = <&pwm0 0 PWM_MSEC(20) PWM_POLARITY_INVERTED>;
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+
+		button0: button_0 {
+			gpios = <&gpio0 11 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button switch 0";
+			zephyr,code = <INPUT_KEY_0>;
+		};
+
+		button1: button_1 {
+			gpios = <&gpio0 12 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button switch 1";
+			zephyr,code = <INPUT_KEY_1>;
+		};
+
+		button3: button_3 {
+			gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button switch 3";
+			zephyr,code = <INPUT_KEY_3>;
+		};
+	};
+
+	arduino_header: connector {
+		compatible = "arduino-header-r3";
+		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
+		gpio-map = <0 0 &gpio0 3 0>,	/* A0 */
+			   <1 0 &gpio0 4 0>,	/* A1 */
+			   <2 0 &gpio0 28 0>,	/* A2 */
+			   <3 0 &gpio0 29 0>,	/* A3 */
+			   <4 0 &gpio0 30 0>,	/* A4 */
+			   <5 0 &gpio0 31 0>,	/* A5 */
+			   <6 0 &gpio1 1 0>,	/* D0 */
+			   <7 0 &gpio1 2 0>,	/* D1 */
+			   <8 0 &gpio1 3 0>,	/* D2 */
+			   <9 0 &gpio1 4 0>,	/* D3 */
+			   <10 0 &gpio1 5 0>,	/* D4 */
+			   <11 0 &gpio1 6 0>,	/* D5 */
+			   <12 0 &gpio1 7 0>,	/* D6 */
+			   <13 0 &gpio1 8 0>,	/* D7 */
+			   <14 0 &gpio1 10 0>,	/* D8 */
+			   <15 0 &gpio1 11 0>,	/* D9 */
+			   <16 0 &gpio1 12 0>,	/* D10 */
+			   <17 0 &gpio1 13 0>,	/* D11 */
+			   <18 0 &gpio1 14 0>,	/* D12 */
+			   <19 0 &gpio1 15 0>,	/* D13 */
+			   <20 0 &gpio0 26 0>,	/* D14 */
+			   <21 0 &gpio0 27 0>;	/* D15 */
+	};
+
+	arduino_adc: analog-connector {
+		compatible = "arduino,uno-adc";
+		#io-channel-cells = <1>;
+		io-channel-map = <0 &adc 1>,	/* A0 = P0.3 = AIN1 */
+				 <1 &adc 2>,	/* A1 = P0.4 = AIN2 */
+				 <2 &adc 4>,	/* A2 = P0.28 = AIN4 */
+				 <3 &adc 5>,	/* A3 = P0.29 = AIN5 */
+				 <4 &adc 6>,	/* A4 = P0.30 = AIN6 */
+				 <5 &adc 7>;	/* A5 = P0.31 = AIN7 */
+	};
+
+	/* These aliases are provided for compatibility with samples */
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &led2;
+		led3 = &led3;
+		pwm-led0 = &pwm_led0;
+		sw0 = &button0;
+		sw1 = &button1;
+		sw3 = &button3;
+		bootloader-led0 = &led0;
+		mcuboot-button0 = &button0;
+		mcuboot-led0 = &led0;
+		watchdog0 = &wdt0;
+	};
+};
+
+&reg0 {
+	status = "okay";
+};
+
+&reg1 {
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&adc {
+	status = "okay";
+};
+
+&uicr {
+	gpio-as-nreset;
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&nfct {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+	gpio-reserved-ranges = <0 2>, <6 1>, <8 3>, <17 7>, <24 1>;
+	gpio-line-names = "XL1", "XL2", "AREF", "A0", "A1", "RTS", "TXD",
+		"CTS", "RXD", "NFC1", "NFC2", "BUTTON1", "BUTTON2", "LED1",
+		"LED2", "LED3", "LED4", "QSPI CS", "RESET", "QSPI CLK",
+		"QSPI DIO0", "QSPI DIO1", "QSPI DIO2", "QSPI DIO3", "EPD_RST",
+		"BUTTON4", "SDA", "SCL", "A2", "A3", "A4", "A5";
+};
+
+&gpio1 {
+	status = "okay";
+	gpio-line-names = "", "D0", "D1", "D2", "D3", "D4", "D5", "D6",
+		"D7", "", "D8", "D9", "D10", "D11", "D12", "D13";
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-1 = <&uart0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+arduino_serial: &uart1 {
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_default>;
+	pinctrl-1 = <&uart1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+arduino_i2c: &i2c0 {
+	compatible = "nordic,nrf-twi";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2c1 {
+	compatible = "nordic,nrf-twi";
+	/* Cannot be used together with spi1. */
+	/* status = "okay"; */
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-1 = <&i2c1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spi";
+	/* Cannot be used together with i2c0. */
+	/* status = "okay"; */
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-1 = <&spi0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi1 {
+	compatible = "nordic,nrf-spi";
+	status = "okay";
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi2 {
+	compatible = "nordic,nrf-spi";
+	status = "disabled";
+	pinctrl-0 = <&spi2_default>;
+	pinctrl-1 = <&spi2_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&qspi {
+	status = "okay";
+	pinctrl-0 = <&qspi_default>;
+	pinctrl-1 = <&qspi_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	mx25r64: mx25r6435f@0 {
+		compatible = "nordic,qspi-nor";
+		reg = <0>;
+		/* MX25R64 supports only pp and pp4io */
+		writeoc = "pp4io";
+		/* MX25R64 supports all readoc options */
+		readoc = "read4io";
+		sck-frequency = <8000000>;
+		jedec-id = [c2 28 17];
+		sfdp-bfp = [
+			e5 20 f1 ff  ff ff ff 03  44 eb 08 6b  08 3b 04 bb
+			ee ff ff ff  ff ff 00 ff  ff ff 00 ff  0c 20 0f 52
+			10 d8 00 ff  23 72 f5 00  82 ed 04 cc  44 83 68 44
+			30 b0 30 b0  f7 c4 d5 5c  00 be 29 ff  f0 d0 ff ff
+		];
+		size = <67108864>;
+		has-dpd;
+		t-enter-dpd = <10000>;
+		t-exit-dpd = <35000>;
+	};
+};
+
+arduino_spi: &spi3 {
+	status = "okay";
+	cs-gpios = <&arduino_header 16 GPIO_ACTIVE_LOW>; /* D10 */
+	pinctrl-0 = <&spi3_default>;
+	pinctrl-1 = <&spi3_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&ieee802154 {
+	status = "okay";
+};
+
+zephyr_udc0: &usbd {
+	compatible = "nordic,nrf-usbd";
+	status = "okay";
+};
+
+&gpregret1 {
+	status = "okay";
+
+	boot_mode0: boot_mode@0 {
+		compatible = "zephyr,retention";
+		status = "okay";
+		reg = <0x0 0x1>;
+	};
+};
+</file>
+
+<file path="Justfile">
+# default recipe to display help information
+help:
+  @echo "Run 'west init' and 'west update' to setup dependencies"
+  @just --list
+
+alias b := build
+
+build:
+    west build --pristine -b nrf52840dk/nrf52840 
+    # -- -DDTC_OVERLAY_FILE=default.overlay
+
+alias f := flash
+
+flash: build
+    west flash --runner jlink
+</file>
+
+<file path="prj.conf">
+# CONFIG_BT=y
+CONFIG_LOG=y
+# CONFIG_BT_DEVICE_NAME="water.ai"
+
+# for SPI
+CONFIG_SPI=y
+CONFIG_GPIO=y
+# CONFIG_DISPLAY=y
+# CONFIG_SSD16XX=y
+
+# required for SPI
+# CONFIG_MIPI_DBI=y
+# CONFIG_MIPI_DBI_SPI=y
+
+# Analog sensor
+# CONFIG_ADC=y
+# CONFIG_ADC_ASYNC=y
+
+# Logging (Recommended)
+CONFIG_LOG_DEFAULT_LEVEL=3
+CONFIG_LOG_BUFFER_SIZE=2048
+# CONFIG_LOG_MODE_IMMEDIATE=y
+CONFIG_LOG_PROCESS_THREAD_STACK_SIZE=2048
+CONFIG_LOG_PROCESS_THREAD_PRIORITY=5
+
+# Thread configuration
+CONFIG_MAIN_STACK_SIZE=4096
+CONFIG_MAIN_THREAD_PRIORITY=5
+
+# CONFIG_DISPLAY_LOG_LEVEL_DBG=y
+# CONFIG_SPI_LOG_LEVEL_DBG=y
+# CONFIG_MIPI_DBI_LOG_LEVEL_DBG=y
+</file>
+
+</files>
