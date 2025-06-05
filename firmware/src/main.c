@@ -133,14 +133,15 @@ int main(void) {
 
 	while (true) {
 		int gforce_z = take_sample();
-		if (gforce_z <= 10000) {
+		if (gforce_z >= 10000) {
 			int tds_val = read_tds();
-			printk("tds_val: %d", tds_val);
+			printk("TONIQ Water Quality: %d (ppm)\n", tds_val);
+			bt_set_adv_number((uint16_t) tds_val);
 		}
 
 		// LOG_INF("tds_val: %d", tds_val);
 
-		k_sleep(K_MSEC(100));
+		k_sleep(K_MSEC(500));
 	}
 
 	return 0;

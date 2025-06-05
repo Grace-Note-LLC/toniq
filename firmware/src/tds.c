@@ -59,9 +59,9 @@ bool init_tds(void) {
 int read_tds(void) {
     int32_t val_mv;
     int err;
-    printk("- %s, channel %d: ",
-            adc_channels[CHANNEL_NUMBER].dev->name,
-            adc_channels[CHANNEL_NUMBER].channel_id);
+    // printk("- %s, channel %d: ",
+    //         adc_channels[CHANNEL_NUMBER].dev->name,
+    //         adc_channels[CHANNEL_NUMBER].channel_id);
 
     (void)adc_sequence_init_dt(&adc_channels[CHANNEL_NUMBER], &sequence);
 
@@ -82,13 +82,13 @@ int read_tds(void) {
         val_mv = (int32_t)buf;
     }
 
-    printk("%"PRId32, val_mv);
+    // printk("%"PRId32, val_mv);
     err = adc_raw_to_millivolts_dt(&adc_channels[CHANNEL_NUMBER], &val_mv);
     /* conversion to mV may not be supported, skip if not */
     if (err < 0) {
         printk(" (value in mV not available)\n");
     } else {
-        printk(" = %"PRId32" mV\n", val_mv);
+        // printk(" = %"PRId32" mV\n", val_mv);
     }
 
     // Convert to PPM

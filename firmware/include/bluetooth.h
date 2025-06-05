@@ -18,15 +18,10 @@
         (((_v) >>  0) & 0xFFU),     \
         (((_v) >>  8) & 0xFFU)      \
 
-static const struct bt_data ad[] = {
-	BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
-	BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE, BT_BYTES_LIST_LE16(0x05C1))
-};
-
-static const struct bt_data sd[] = {
-	BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
-};
-
+// Function called when Bluetooth is ready
 void bt_ready(int err);
+
+// Function to update advertised number (0-2000)
+void bt_set_adv_number(uint16_t number);
 
 #endif // BLUETOOTH_H
