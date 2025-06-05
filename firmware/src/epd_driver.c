@@ -104,7 +104,7 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     driver->write_command(driver, 0x12);
     driver->wait_while_busy(driver, "software reset", 20);
     LOG_DBG("Software reset complete");
-        
+    
     LOG_DBG("Sending Driver Output Control (0x01)");
     driver->write_command(driver, 0x01);
     driver->write_data(driver, 0xC7); // (200-1) = 199 decimal
@@ -116,9 +116,9 @@ int epd_init(epd_driver_t* driver, int16_t cs_pin, int16_t dc_pin, int16_t rst_p
     driver->write_data(driver, 0x05); // Refer to GDEH0154D67 datasheet or GxEPD2 for exact value meaning
 
     // This command (0x18 Temperature Sensor) is often optional for basic display operation but good for consistency.
-    // LOG_DBG("Sending Temperature Sensor Control (0x18)");
-    // driver->write_command(driver, 0x18);
-    // driver->write_data(driver, 0x80); // Enable internal sensor
+    LOG_DBG("Sending Temperature Sensor Control (0x18)");
+    driver->write_command(driver, 0x18);
+    driver->write_data(driver, 0x80); // Enable internal sensor
 
     // The original epd_driver.c has many other commands (Power setting, Booster, PLL, VCM, VCOM)
     // These might be necessary or might conflict. Start with the GxEPD2 minimal init.
