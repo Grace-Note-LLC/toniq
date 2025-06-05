@@ -46,14 +46,17 @@
 	};
 };
 
-&i2c1 {										/* a */
-	compatible = "nordic,nrf-twim";			/* b */
-	status = "okay";						/* c */
-	clock-frequency = <100000>;				/* d */
+// i2c1 uses pin 30 and 31
+// https://github.com/zephyrproject-rtos/zephyr/blob/fd6b05c81b86a1ffe465d56ded7b73a9fdb7f14b/boards/nordic/nrf52840dk/nrf52840dk_nrf52840.dts#L209-L216
+// https://github.com/zephyrproject-rtos/zephyr/blob/fd6b05c81b86a1ffe465d56ded7b73a9fdb7f14b/boards/nordic/nrf52840dk/nrf52840dk_nrf52840-pinctrl.dtsi#L64-L77
+&i2c1 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	clock-frequency = <100000>;
 
-	imu:nRF52840@28 {				/* e */
-		// device compatible				/* f */
-		label = "imu";	/* g */
-       	reg = <0x68>;						/* h */
+	imu:nRF52840@28 {
+		// device compatible
+		label = "imu";
+       	reg = <0x68>;
    	};
-};	
+};
