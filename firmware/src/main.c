@@ -78,9 +78,11 @@ int take_sample() {
         LOG_ERR("IMU read failed");
         return err;
     }
-    LOG_INF("gyro_x: %d deg/s", raw_gyro.x_deg_s);
-    LOG_INF("gyro_y: %d deg/s", raw_gyro.y_deg_s);
-    LOG_INF("gyro_z: %d deg/s", raw_gyro.z_deg_s);
+    // LOG_INF("gyro_x: %d deg/s", raw_gyro.x_deg_s);
+    // LOG_INF("gyro_y: %d deg/s", raw_gyro.y_deg_s);
+    // LOG_INF("gyro_z: %d deg/s", raw_gyro.z_deg_s);
+	return raw_gyro.z_deg_s;
+
 #endif
 
 #ifdef TDS
@@ -126,10 +128,19 @@ int main(void) {
 	if ((err = initialize())) {
 		printk("Initialization failed (err %d)\n", err);
 	}
+	init_tds();
+
 
 	while (true) {
-		take_sample();
-		k_sleep(K_MSEC(2000));
+		int gforce_z = take_sample();
+		if (gforce_z <= -10000) {
+			int tds_val = read_tds();
+			printk("tds_val: %d", tds_val);
+		}
+
+		// LOG_INF("tds_val: %d", tds_val);
+
+		k_sleep(K_MSEC(100));
 	}
 
 	return 0;

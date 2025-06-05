@@ -20,7 +20,7 @@ LOG_MODULE_REGISTER(logging_imu);
 static const struct i2c_dt_spec dev_i2c = I2C_DT_SPEC_GET(I2C0_NODE);
 
 #define NUM_REG 6
-#define GYRO_XOUT_H 0x43
+#define GYRO_XOUT_H 0x3B
 
 #define GYRO_XOUT_H_IDX 0
 #define GYRO_XOUT_L_IDX 1
@@ -79,7 +79,7 @@ int16_t two_reg_to_deg_s(uint8_t high, uint8_t low) {
   int16_t deg_s = (high << 8) | low;
   // see page 31 for 250 deg/s range 
   // https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Register-Map1.pdf
-  deg_s /= 131.0;
+  // deg_s /= 131.0;
   return deg_s;
 }
 
