@@ -24,6 +24,10 @@
 // Define service UUID
 #define WATER_AI_SERVICE_UUID BT_UUID_128_ENCODE(0x6E536C92, 0x0184, 0x47AD, 0xA0F9, 0x54BCE6B10D1E)
 
+// Define characteristic UUIDs
+#define TDS_VALUE_CHAR_UUID    0x2A56  // Digital value characteristic
+#define TDS_STRING_CHAR_UUID   0x2A3D  // String characteristic for TDS level display
+
 // Function called when Bluetooth is ready
 void bt_ready(int err);
 

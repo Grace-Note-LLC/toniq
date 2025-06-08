@@ -1,10 +1,14 @@
 #include "bluetooth.h"
+#include <stdio.h>
 
 static uint16_t adv_number = 1;
 static uint8_t adv_number_le[2] = {1, 0};
+static char tds_level_string[20]; // Buffer for storing the formatted TDS level string
 
 static ssize_t adv_number_read(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                              void *buf, uint16_t len, uint16_t offset);
+static ssize_t tds_level_string_read(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+                                    void *buf, uint16_t len, uint16_t offset);
 
 // GATT service definition
 BT_GATT_SERVICE_DEFINE(water_ai_service,
@@ -13,6 +17,8 @@ BT_GATT_SERVICE_DEFINE(water_ai_service,
     ),
     BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_16(0x2A56), BT_GATT_CHRC_READ,
                          BT_GATT_PERM_READ, adv_number_read, NULL, NULL),
+    BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_16(0x2A3D), BT_GATT_CHRC_READ,
+                         BT_GATT_PERM_READ, tds_level_string_read, NULL, NULL),
 );
 
 // Callback for handling characteristic reads
@@ -25,6 +31,20 @@ static ssize_t adv_number_read(struct bt_conn *conn, const struct bt_gatt_attr *
     
     // printk("GATT: Read adv_number: %d\n", adv_number);
     return bt_gatt_attr_read(conn, attr, buf, len, offset, out_buffer, sizeof(out_buffer));
+}
+
+// Callback for handling TDS level string characteristic reads
+static ssize_t tds_level_string_read(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+                                    void *buf, uint16_t len, uint16_t offset)
+{
+    // printk("GATT: Read TDS level string: %s\n", tds_level_string);
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, tds_level_string, strlen(tds_level_string));
+}
+
+// Helper function to update the TDS level string
+static void update_tds_level_string(void)
+{
+    snprintf(tds_level_string, sizeof(tds_level_string), "TDS level: %d", adv_number);
 }
 
 static void connected(struct bt_conn *conn, uint8_t err)
@@ -69,6 +89,8 @@ void bt_set_adv_number(uint16_t number)
     adv_number = number;
     adv_number_le[0] = number & 0xFF;
     adv_number_le[1] = (number >> 8) & 0xFF;
+    
+    update_tds_level_string();
 
     // Update ongoing advertising data
     bt_le_adv_update_data(ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
@@ -86,6 +108,8 @@ void bt_ready(int err)
     }
     printk("Bluetooth initialized\n");
 
+    update_tds_level_string(); // Initialize string
+    
     err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad),
               sd, ARRAY_SIZE(sd));
     if (err) {
